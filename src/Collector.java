@@ -1,4 +1,4 @@
-package ca;
+
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -7,13 +7,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-public class VerifyServer extends Thread {
+
+public class Collector extends Thread {
 
 	private ServerSocket serverSocket;
 
-	public VerifyServer(int port) throws IOException {
+	public Collector(int port) throws IOException {
 		serverSocket = new ServerSocket(port);
-		//		serverSocket.setSoTimeout(10000);
 	}
 
 	@Override
@@ -25,8 +25,15 @@ public class VerifyServer extends Thread {
 				Socket server = serverSocket.accept();
 				DataInputStream in = new DataInputStream(server.getInputStream());
 				String cert = in.readUTF() ;
-				DataOutputStream out = new DataOutputStream(server.getOutputStream());
-				out.writeUTF("ok");
+				
+				if ( validate(cert) ){
+					DataOutputStream out = new DataOutputStream(server.getOutputStream());
+					out.writeUTF("session");
+				}else{
+					DataOutputStream out = new DataOutputStream(server.getOutputStream());
+					out.writeUTF("session");
+				}
+				
 				server.close();
 			}catch(SocketTimeoutException s)
 			{
@@ -40,4 +47,7 @@ public class VerifyServer extends Thread {
 		}
 	}
 
+	private boolean validate(String cert) {
+		return false;
+	}
 }
