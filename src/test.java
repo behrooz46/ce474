@@ -1,4 +1,1 @@
-
-public class test {
-
-}
+salam khoobi
