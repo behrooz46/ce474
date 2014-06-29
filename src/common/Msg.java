@@ -9,13 +9,8 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 
 import ca.SignServer;
@@ -29,7 +24,8 @@ public class Msg implements Serializable {
 	public transient int encryptionMethod;
 	
 	public int status ; 
-	public HashMap<String, byte[]> map ;
+	transient public HashMap<String, byte[]> map ;
+	public byte[] body;
 	public byte[] sign ;
 
 
@@ -54,14 +50,32 @@ public class Msg implements Serializable {
 
 
 	public void encrypt(byte[] key) {
-		// TODO Auto-generated method stub
-		// encrypt each section separately   
+		// encrypt each section separately
+		try{
+			RSAPublicKey pk = (RSAPublicKey)SignServer.arrayToPublicKey(key);
+			algorithms.RSA rsa = new RSA(pk.getModulus());
+			BigInteger msg = new BigInteger(serialize(map));
+			body = rsa.encrypt(msg, pk.getPublicExponent()).toByteArray();
+		}
+		catch(Exception e){
+			System.err.println("Error while retrieving key in encryption");
+		}
 	}
 
 
 	public void decrypt(byte[] key) {
-		// TODO Auto-generated method stub
 		// decrypt each section separately
+		try{
+			RSAPrivateKey pk = (RSAPrivateKey)SignServer.arrayToPrivateKey(key);
+			algorithms.RSA rsa = new RSA(pk.getModulus());
+			BigInteger msg = new BigInteger(body);
+			body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
+			map = (HashMap<String, byte[]>)deserialize(body);
+			
+		}
+		catch(Exception e){
+			System.err.println("Error while retrieving key in decryption");
+		}
 	}
 
 
@@ -107,4 +121,10 @@ public class Msg implements Serializable {
         o.writeObject(obj);
         return b.toByteArray();
     }
+	
+	private Object deserialize(byte[] data) throws IOException, ClassNotFoundException{
+	    ByteArrayInputStream in = new ByteArrayInputStream(data);
+	    ObjectInputStream is = new ObjectInputStream(in);
+	    return is.readObject();
+	}
 }
