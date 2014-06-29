@@ -1,28 +1,18 @@
 package ca;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
 
 import sun.security.x509.*;
 
 import java.security.cert.*;
-import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.*;
 import java.math.BigInteger;
-import java.util.Calendar;
 import java.util.Date;
 
 import javax.security.auth.x500.X500Principal;
@@ -60,7 +50,6 @@ import org.bouncycastle.jce.interfaces.PKCS12BagAttributeCarrier;
 import org.bouncycastle.jce.provider.X509CertificateObject;
 import org.bouncycastle.openssl.PEMWriter;
 import org.bouncycastle.util.Strings;
-//import org.bouncycastle.x509.X509Util;
 import org.bouncycastle.x509.X509V1CertificateGenerator;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.bouncycastle.x509.extension.AuthorityKeyIdentifierStructure;
@@ -184,7 +173,6 @@ public class SignServer extends Thread {
 	    // DUMP CERTIFICATE AND KEY PAIR
 
 //	    printCert(cert);
-	    	    
 	    caCert = cert;
 	    caPair = keyPair;
 	    return cert;
