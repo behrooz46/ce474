@@ -7,6 +7,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.SecureRandom;
+import java.util.HashMap;
 
 import common.Msg;
 import common.NotValidMsgException;
@@ -16,9 +18,15 @@ public class Authority extends Thread {
 	private ServerSocket serverSocket;
 	public boolean finished;
 	
+	private HashMap<byte[], byte[]> c2session ;
+	private HashMap<byte[], byte[]> c2index ;
+	
+	
 	public Authority(String fileName) throws IOException {
 		// TODO read conf file
 		serverSocket = new ServerSocket(3333);
+		c2session = new HashMap<byte[], byte[]>() ;
+		c2index   = new HashMap<byte[], byte[]>() ;
 	}
 
 	public static void main(String[] args) {
@@ -85,7 +93,8 @@ public class Authority extends Thread {
 						byte[] cert2 = inner.get("cert");
 						byte[] index = inner.get("index");
 						//-------------------------
-						//TODO check cert == cert2 
+						if ( cert.equals(cert2) == false )
+							throw new NotValidMsgException() ;
 						this.addVote(cert, session, index);
 						//-------------------------
 						Msg msg = new Msg() ;
@@ -106,14 +115,21 @@ public class Authority extends Thread {
 		}
 	}
 
-	private void addVote(byte[] cert, byte[] session, byte[] index) {
-		// TODO Auto-generated method stub
+	private void addVote(byte[] cert, byte[] session, byte[] index) throws NotValidMsgException {
+		if ( c2session.containsKey(cert) == false )
+			throw new NotValidMsgException() ;
+		if ( c2session.get(cert).equals(session)  )
+			throw new NotValidMsgException() ;
+		if (   c2index.containsKey(cert) == true )
+			throw new NotValidMsgException() ;
 		
+		c2index.put(cert, index);  
 	}
 
-	private byte[] getSessionKey(byte[] cert) {
-		// TODO Auto-generated method stub
-		return null;
+	private byte[] getSessionKey(byte[] cert) throws NotValidMsgException {
+		if ( c2session.containsKey(cert) == false )
+			throw new NotValidMsgException() ;
+		return c2session.get(cert) ;
 	}
 
 	private void validateCert(byte[] cert) throws NotValidMsgException{
@@ -121,11 +137,17 @@ public class Authority extends Thread {
 		// check for valid certificate 
 	}
 
-	private byte[] makeSession(byte[] cert) {
-		System.out.println("**recieved: " + new String(cert));
-		// TODO Auto-generated method stub
-		byte[] session = "session".getBytes() ;
-		// TODO add cert / session / ...
+	private byte[] makeSession(byte[] cert) throws NotValidMsgException {
+		if ( c2session.containsKey(cert) == true )
+			throw new NotValidMsgException() ;
+
+		SecureRandom sr = new SecureRandom();
+
+		byte[] session = new byte[32];
+//		byte[] iv = new byte[16];
+		sr.nextBytes(session);
+//		sr.nextBytes(iv);
+		c2session.put(cert, session);
 		return session;
 	}
 }
