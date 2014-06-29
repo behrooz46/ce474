@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import sun.security.x509.*;
 
 import java.security.cert.*;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.security.*;
@@ -132,7 +133,7 @@ public class SignServer{
 			                        new SubjectKeyIdentifierStructure(publicKey));
 			 
 			X509Certificate cert = certGen.generate(caKey, "BC");
-			printCert(cert);
+//			printCert(cert);
 			return cert;
 		}
 		catch(Exception e){
@@ -167,6 +168,23 @@ public class SignServer{
 	    }
 	}
 	
+	public static boolean verify(X509Certificate cert, PublicKey key){
+		try {
+			cert.verify(key);
+			return true;
+		} catch (InvalidKeyException | CertificateException
+				| NoSuchAlgorithmException | NoSuchProviderException
+				| SignatureException e) {
+			// TODO Auto-generated catch block
+			return false;
+		}
+	}
+	
+	public PublicKey getPublicKey(){
+		return caPair.getPublic();
+	}
+	
+	
 	public static void main(String[] args) {
 		try{
 			SignServer ss = new SignServer("public_key.der", "private_key.der");
@@ -176,10 +194,33 @@ public class SignServer{
 		  
 			KeyPair keyPair = keyPairGenerator.generateKeyPair();
 			
-			ss.createCert(keyPair.getPublic(), "Farhad Shahmohammadi");
+			X509Certificate cert = ss.createCert(keyPair.getPublic(), "Farhad Shahmohammadi");
+			System.out.println(SignServer.verify(cert, ss.getPublicKey()));
 		}
 		catch(Exception e){
 			
+		}
+	}
+	
+	public static PublicKey arrayToPublicKey(byte[] key){
+		try {
+			return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(key));
+		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			return null;
+		}
+	}
+	
+	public static byte[] keyToArray(Key key){
+		return key.getEncoded();
+	}
+	
+	public static PrivateKey arrayToPrivateKey(byte[] key){
+		try {
+			return KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(key));
+		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			return null;
 		}
 	}
 	

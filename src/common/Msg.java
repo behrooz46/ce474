@@ -8,7 +8,18 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
+
+import ca.SignServer;
+import algorithms.*;
 
 public class Msg implements Serializable {
 	private static final long serialVersionUID = -8154976896133585345L;
@@ -29,8 +40,16 @@ public class Msg implements Serializable {
 	
 	
 	public void sign(byte[] key) {
-		// TODO Auto-generated method stub
 		// sign for each in map
+		try{
+			RSAPrivateKey pk = (RSAPrivateKey)SignServer.arrayToPrivateKey(key);
+			algorithms.RSA rsa = new algorithms.RSA(pk.getModulus());
+			BigInteger msg = new BigInteger(SHA256.hash(serialize(map)));
+			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
+		}
+		catch(Exception e){
+			System.err.println("Error while retrieving key in sigining");
+		}
 	}
 
 
@@ -81,4 +100,11 @@ public class Msg implements Serializable {
 		ObjectInput oin = new ObjectInputStream(bis);
 		return (Msg) oin.readObject();
 	}
+	
+	private byte[] serialize(Object obj) throws IOException {
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        ObjectOutputStream o = new ObjectOutputStream(b);
+        o.writeObject(obj);
+        return b.toByteArray();
+    }
 }
