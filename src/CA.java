@@ -52,10 +52,13 @@ public class CA extends Thread{
 				ans.setEncryptionMethod(Msg.Encryption_NONE) ;
 				ans.decrypt(ca_private_key) ;
 				ans.validate(client_publick_key) ;
-				//-------------------------				
-				byte[] cert = makeCertificate(ans.message);
+				//-------------------------		
+				byte[] pu = ans.get("public") ;
+				byte[] name = ans.get("name") ;
+				byte[] cert = makeCertificate(pu, new String(name));
 				//-------------------------
-				Msg msg = new Msg(cert) ;
+				Msg msg = new Msg() ;
+				msg.put("cert", cert);
 				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 				msg.sign(ca_private_key) ;
 				msg.encrypt(client_publick_key);
@@ -76,8 +79,8 @@ public class CA extends Thread{
 		}
 	}
 
-	private byte[] makeCertificate(byte[] message) {
-		System.out.println("**recieved: " + new String(message));
+	private byte[] makeCertificate(byte[] message, String string) {
+		System.out.println("**recieved: " + new String(message) + " " + string);
 		// TODO Auto-generated method stub
 		return "cert".getBytes() ;
 	}

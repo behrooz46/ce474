@@ -1,17 +1,8 @@
 
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-
-
-
-
-
-import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -23,6 +14,7 @@ import common.NotValidMsgException;
 
 public class Authority extends Thread {
 	private ServerSocket serverSocket;
+	public boolean finished;
 	
 	public Authority(String fileName) throws IOException {
 		// TODO read conf file
@@ -64,18 +56,44 @@ public class Authority extends Thread {
 				ans.decrypt(auth_private_key) ;
 				ans.validate(client_publick_key) ;
 				//-------------------------
-				this.validateCert(ans.message) ;
-				byte[] session = makeSession(ans.message);
-				//-------------------------
-				Msg msg = new Msg(session) ;
-				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-				msg.sign(auth_private_key) ;
-				msg.encrypt(client_publick_key);
-				//-------------------------
-				ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
-				out.writeObject(msg);
+				if (ans.status == 700){
+					Msg msg = new Msg() ;
+					//TODO add HashMap -> byte to msg  
+					ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+					out.writeObject(msg);
+				}else{
+					byte[] cert = ans.get("cert") ;
+					this.validateCert(cert) ;
+					if (ans.status == 800){
+						byte[] session = makeSession(cert);
+						//-------------------------
+						Msg msg = new Msg() ;
+						msg.put("session", session);
+						msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+						msg.sign(auth_private_key) ;
+						msg.encrypt(client_publick_key);
+						//-------------------------
+						ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+						out.writeObject(msg);
+					}else if (ans.status == 801){
+						byte[] session = this.getSessionKey(cert);
+						byte[] tmpByte = ans.get("inner");
+						//-------------------------
+						Msg inner = Msg.getMsg(tmpByte);
+						inner.setEncryptionMethod(Msg.Encryption_AES) ;
+						inner.decrypt(client_publick_key);
+						byte[] cert2 = inner.get("cert");
+						byte[] index = inner.get("index");
+						//-------------------------
+						//TODO check cert == cert2 
+						this.addVote(cert, session, index);
+						//-------------------------
+						Msg msg = new Msg() ;
+						ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+						out.writeObject(msg);
+					}
+				}
 				server.close();
-			
 			}catch(IOException e){
 				e.printStackTrace();
 			}catch(NotValidMsgException e){
@@ -88,6 +106,16 @@ public class Authority extends Thread {
 		}
 	}
 
+	private void addVote(byte[] cert, byte[] session, byte[] index) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private byte[] getSessionKey(byte[] cert) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	private void validateCert(byte[] cert) throws NotValidMsgException{
 		// TODO Auto-generated method stub
 		// check for valid certificate 
@@ -96,7 +124,9 @@ public class Authority extends Thread {
 	private byte[] makeSession(byte[] cert) {
 		System.out.println("**recieved: " + new String(cert));
 		// TODO Auto-generated method stub
-		return "session".getBytes() ;
+		byte[] session = "session".getBytes() ;
+		// TODO add cert / session / ...
+		return session;
 	}
 }
 

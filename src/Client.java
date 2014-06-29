@@ -1,16 +1,17 @@
 
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Scanner;
 
 import common.Msg;
+import common.NetworkErrorException;
 import common.NotValidMsgException;
 
 public class Client {
@@ -25,6 +26,7 @@ public class Client {
 	private String authServerName;
 	private int authServerPort;
 	private byte[] session;
+	private byte[] index;
 
 	public Client(String fileName) throws IOException {
 		// TODO read conf file
@@ -53,85 +55,98 @@ public class Client {
 		byte[] auth_public_key = null ;
 		byte[] client_private_key = null ;
 //		byte[] client_publick_key = null ;
-		
+		String name = cin.next() ;
 		while(true){
 			String cmd = cin.next() ;
-			if (cmd.equals("Exit")){
-				break ;
-			}else if (cmd.equals("Sign")){
-				try
-				{
+			try
+			{
+				
+				if (cmd.equals("Exit")){
+					break ;
+				}else if (cmd.equals("Sign")){
 					//-------------------------
-					Msg msg = new Msg(client.getPublickKey().getBytes()) ;
+					Msg msg = new Msg() ;
+					msg.put("public", client.getPublickKey().getBytes());
+					msg.put("name", name.getBytes());
+					
 					msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 					msg.sign(client_private_key) ;
 					msg.encrypt(ca_public_key);
-					//------------------------- Create & Send MSG
-					Socket socket = new Socket(client.caServerName, client.caServerPort);
-					OutputStream outToServer = socket.getOutputStream();
-					ObjectOutputStream out = new ObjectOutputStream(outToServer);
-					out.writeObject(msg);
-					//------------------------- Receive MSG & Close
-					InputStream inFromServer = socket.getInputStream();
-					ObjectInputStream in = new ObjectInputStream(inFromServer);
-					Object input = in.readObject() ;
-					socket.close();
-					//------------------------- 
-					Msg ans = (Msg) input ;
+					//-------------------------
+					Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
 					ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 					ans.decrypt(client_private_key) ;
 					ans.validate(ca_public_key) ; 
 					//-------------------------
-					client.setCertificate(ans.message); 
-				}catch(IOException e){
-					e.printStackTrace();
-				}catch(NotValidMsgException e){
-					//Not Valid Msg 
-					e.printStackTrace();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				}
-			}else if (cmd.equals("Session")){
-				try
-				{
+					client.setCertificate(ans.get("cert")); 
+				}else if (cmd.equals("Session")){
 					//-------------------------
-					Msg msg = new Msg(client.cert) ;
+					Msg msg = new Msg() ;
+					msg.status = 800 ;
+					msg.put("cert", client.cert);
 					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 					msg.sign(client_private_key) ;
 					msg.encrypt(auth_public_key);
-					//------------------------- Create & Send MSG
-					Socket socket = new Socket(client.authServerName, client.authServerPort);
-					OutputStream outToServer = socket.getOutputStream();
-					ObjectOutputStream out = new ObjectOutputStream(outToServer);
-					out.writeObject(msg);
-					//------------------------- Receive MSG & Close
-					InputStream inFromServer = socket.getInputStream();
-					ObjectInputStream in = new ObjectInputStream(inFromServer);
-					Object input = in.readObject() ;
-					socket.close();
-					//------------------------- 
-					Msg ans = (Msg) input ;
+					//-------------------------
+					Msg ans = client.communicate(client.authServerName, client.authServerPort, msg) ;
 					ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 					ans.decrypt(client_private_key) ;
 					ans.validate(auth_public_key) ; 
 					//-------------------------
-					client.setSession(ans.message); 
-				}catch(IOException e){
-					e.printStackTrace();
-				}catch(NotValidMsgException e){
-					//Not Valid Msg 
-					e.printStackTrace();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
+					client.setSession(ans.get("session")); 
+				}else if (cmd.equals("Vote")){
+					String vote = cin.next() ;
+					//-------------------------
+					Msg msg = new Msg() ;
+					msg.put("vote", vote.getBytes());
+					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+					msg.sign(client_private_key) ;
+					msg.encrypt(auth_public_key);
+					//-------------------------
+					Msg ans = client.communicate(client.collectServerName, client.collectServerPort, msg) ;
+					ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+					ans.decrypt(client_private_key) ;
+					ans.validate(auth_public_key) ; 
+					//-------------------------
+					client.setIndex(ans.get("index"));
+					//-------------------------
+					Msg innerMsg = new Msg() ;
+					innerMsg.put("cert", client.cert);
+					innerMsg.put("index", client.index);
+					innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
+					innerMsg.encrypt(client.session);
+					//=============
+					msg = new Msg() ;
+					msg.status = 801 ; 
+					msg.put("cert", client.cert);
+					msg.put("inner", Msg.getByteArray(innerMsg));
+					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+					msg.sign(client_private_key) ;
+					msg.encrypt(auth_public_key);
+					//-------------------------
+					client.communicate(client.authServerName, client.authServerPort, msg) ;
+				}else{
+					System.out.println("Available Commands Are:\n1- Sign\n2- Auth\n3- Vote <name>\n4- Exit");
 				}
-			}else if (cmd.equals("Vote")){
-				
-			}else{
-				System.out.println("Available Commands Are:\n1- Sign\n2- Auth\n3- Vote <name>\n4- Exit");
+			}catch(NotValidMsgException e){
+				//TODO Not Valid Msg 
+				e.printStackTrace();
+			} catch (NetworkErrorException e) {
+				//TODO Network Error
+				e.printStackTrace();
 			}
-
 		}
 		cin.close(); 
+	}
+
+	private void setFinished(byte[] message) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void setIndex(byte[] message) {
+		this.index = message ;
+		
 	}
 
 	private void setSession(byte[] session) {
@@ -146,6 +161,33 @@ public class Client {
 
 	private String getPublickKey(){
 		return "PublicKey";
-//		return publicKey	 ;
+	}
+	
+	private Msg communicate(String server, int port, Msg msg) throws NetworkErrorException {
+		Msg ans = null ; 
+		//------------------------- 
+		try {
+			Socket socket = new Socket(server, port);
+			OutputStream outToServer = socket.getOutputStream();
+			ObjectOutputStream out = new ObjectOutputStream(outToServer);
+			out.writeObject(msg);
+			//------------------------- 
+			InputStream inFromServer = socket.getInputStream();
+			ObjectInputStream in = new ObjectInputStream(inFromServer);
+			Object input = in.readObject() ;
+			
+			socket.close();
+			ans = (Msg) input ;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new NetworkErrorException() ;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new NetworkErrorException() ;
+		}
+		//------------------------- 
+		return ans;
 	}
 }
