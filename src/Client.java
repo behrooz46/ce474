@@ -11,6 +11,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
 
+import common.Helper;
 import common.Msg;
 import common.NetworkErrorException;
 import common.NotValidMsgException;
@@ -38,6 +39,7 @@ public class Client {
 		caServerName = cin.next() ; caServerPort = cin.nextInt() ;
 		authServerName = cin.next() ; authServerPort = cin.nextInt() ;
 		collectServerName = cin.next() ; collectServerPort = cin.nextInt() ;
+		cin.close();
 		//----------------------- read public key
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(1024);
@@ -131,7 +133,7 @@ public class Client {
 		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
 		innerMsg.encrypt(client.session);
 
-		msg.put("innner", Msg.getByteArray(innerMsg));
+		msg.put("innner", Helper.serialize(innerMsg));
 		
 		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 		msg.sign(client.privateKey) ;
@@ -153,7 +155,7 @@ public class Client {
 		msg = new Msg() ;
 		msg.status = 801 ; 
 		msg.put("cert", client.cert);
-		msg.put("inner", Msg.getByteArray(innerMsg));
+		msg.put("inner", Helper.serialize(innerMsg));
 		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 		msg.sign(client.privateKey) ;
 		msg.encrypt(null);

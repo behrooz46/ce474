@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.security.SecureRandom;
 import java.util.HashMap;
 
+import common.Helper;
 import common.Msg;
 import common.NotValidMsgException;
 
@@ -87,7 +88,7 @@ public class Authority extends Thread {
 						byte[] session = this.getSessionKey(cert);
 						byte[] tmpByte = ans.get("inner");
 						//-------------------------
-						Msg inner = Msg.getMsg(tmpByte);
+						Msg inner = (Msg)(Helper.deserialize(tmpByte));
 						inner.setEncryptionMethod(Msg.Encryption_AES) ;
 						inner.decrypt(client_publick_key);
 						byte[] cert2 = inner.get("cert");
