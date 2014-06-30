@@ -42,7 +42,7 @@ public class SignServer{
 	
 		
 	@SuppressWarnings("deprecation")
-	private X509Certificate generateSelfSignedX509Certificate(){
+	public X509Certificate generateSelfSignedX509Certificate(){
 		try{
 		    Date validityBeginDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
 		    Date validityEndDate = new Date(System.currentTimeMillis() + 2 * 365 * 24 * 60 * 60 * 1000);
@@ -105,7 +105,7 @@ public class SignServer{
 	}
 	
 	
-	private void printCert(X509Certificate cert){
+	public static void printCert(X509Certificate cert){
 		System.out.println(new String(new char[80]).replace("\0", "="));
 	    System.out.println("CERTIFICATE TO_STRING");
 	    System.out.println(new String(new char[80]).replace("\0", "="));

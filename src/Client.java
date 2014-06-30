@@ -9,8 +9,11 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
+import ca.SignServer;
 import common.Helper;
 import common.Msg;
 import common.NetworkErrorException;
@@ -76,6 +79,9 @@ public class Client {
 			} catch (NetworkErrorException e) {
 				//TODO Network Error
 				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		cin.close(); 
@@ -89,7 +95,10 @@ public class Client {
 		this.session = session ;
 	}
 
-	private void setCertificate(byte[] cert) {
+	private void setCertificate(byte[] cert) throws ClassNotFoundException, IOException {
+		X509Certificate ret = (X509Certificate) Helper.deserialize(cert) ;
+		System.out.println("Certifcate Receieved:");
+		SignServer.printCert(ret); 
 		this.cert = cert ;
 	}
 
@@ -184,7 +193,7 @@ public class Client {
 		
 	}
 
-	private static void signWithCA(Client client) throws NetworkErrorException, NotValidMsgException {
+	private static void signWithCA(Client client) throws NetworkErrorException, NotValidMsgException, ClassNotFoundException, IOException {
 		//-------------------------
 		Msg msg = new Msg() ;
 		msg.put("public", client.publicKey);

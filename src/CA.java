@@ -1,21 +1,55 @@
 
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
+import java.util.Scanner;
 
+import ca.SignServer;
+import common.Helper;
 import common.Msg;
 import common.NotValidMsgException;
 
 
 public class CA extends Thread{
 	private ServerSocket serverSocket;
+	 
+	private byte[] publicKey, privateKey;
 	
-	public CA(String fileName) throws IOException {
+	private String serverName, collectServerName, authServerName;
+	private int serverPort, collectServerPort, authServerPort;
+	private byte[] collectPublicKey, authPublicKey;
+
+	private X509Certificate cert;
+
+	private SignServer signServer;
+	
+	public CA(String conf) throws IOException {
 		// TODO read conf file
 		serverSocket = new ServerSocket(2222);
+		Scanner cin = new Scanner(new File(conf) );
+		//--------------
+		serverName = cin.next() ; serverPort = cin.nextInt() ;
+		String publicFile = cin.next() ;
+		String privateFile = "Keys/CA/private_key.der" ;
+		
+		//--------------
+		authServerName = cin.next() ; authServerPort = cin.nextInt() ;
+		authPublicKey = Helper.loadPublicKey(cin.next()).getEncoded() ;
+		collectServerName = cin.next() ; collectServerPort = cin.nextInt() ;
+		collectPublicKey = Helper.loadPublicKey(cin.next()).getEncoded() ;
+		cin.close();
+		//--------------
+		publicKey = Helper.loadPublicKey(publicFile).getEncoded() ;
+		privateKey = Helper.loadPublicKey(privateFile).getEncoded() ;
+		
+		this.signServer = new SignServer(publicFile, privateFile) ;
+		this.cert = signServer.generateSelfSignedX509Certificate() ;
 	}
 
 	public static void main(String[] args) {
@@ -33,13 +67,6 @@ public class CA extends Thread{
 	@Override
 	public void run() {
 		
-		
-//		byte[] ca_public_key = null ;
-		byte[] ca_private_key = null ;
-//		byte[] client_private_key = null ;
-		byte[] client_publick_key = null ;
-		
-		
 		while(true)
 		{
 			try
@@ -50,8 +77,8 @@ public class CA extends Thread{
 				//-------------------------
 				Msg ans = (Msg) input ;
 				ans.setEncryptionMethod(Msg.Encryption_NONE) ;
-				ans.decrypt(ca_private_key) ;
-				ans.validate(client_publick_key) ;
+				ans.decrypt(null) ;
+				ans.validate(null) ;
 				//-------------------------		
 				byte[] pu = ans.get("public") ;
 				byte[] name = ans.get("name") ;
@@ -60,8 +87,8 @@ public class CA extends Thread{
 				Msg msg = new Msg() ;
 				msg.put("cert", cert);
 				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-				msg.sign(ca_private_key) ;
-				msg.encrypt(client_publick_key);
+				msg.sign(this.privateKey) ;
+				msg.encrypt(pu);
 				//-------------------------
 				ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 				out.writeObject(msg);
@@ -78,10 +105,10 @@ public class CA extends Thread{
 		}
 	}
 
-	private byte[] makeCertificate(byte[] message, String string) {
-		System.out.println("**recieved: " + new String(message) + " " + string);
-		// TODO Auto-generated method stub
-		return "cert".getBytes() ;
+	private byte[] makeCertificate(byte[] pu, String name) throws IOException {
+		PublicKey PU = Helper.arrayToPublicKey(pu);
+		X509Certificate ret = signServer.createCert(PU, name) ;
+		return Helper.serialize(ret); 
 	}
 }
 
