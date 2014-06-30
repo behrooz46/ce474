@@ -213,21 +213,7 @@ public class Collector extends Thread {
 	}
 
 	private byte[] getIndex(byte[] vote) {
-		try {
-			Msg inner = (Msg) Helper.deserialize(vote);
-			inner.setEncryptionMethod(Msg.Encryption_AES);
-			inner.encrypt(null, KeyType.SYM);
-			System.out.println("Vote: " + new String(inner.get("vote")));
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NotValidMsgException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		System.out.println(new String(vote));
 		
 		enc_votes.put(new Integer(innerIndex), vote);
 		String ret = "" + innerIndex ;

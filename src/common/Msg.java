@@ -16,9 +16,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 
 import sun.security.provider.SecureRandom;
-
 import ca.SignServer;
 import algorithms.*;
 
@@ -44,22 +44,24 @@ public class Msg implements Serializable {
 			RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
 			algorithms.RSA rsa = new algorithms.RSA(pk.getModulus());
 			
+			Map<String, byte[]> copy = new TreeMap<String, byte[]>(map);
+			
 			int len = 0;
-			for(Map.Entry<String, byte[]> ent : map.entrySet()){
+			for(Map.Entry<String, byte[]> ent : copy.entrySet()){
 				len += ent.getValue().length;
 			}
 
 			byte[] res = new byte[len];
 			
 			int prev = 0;
-			for(Map.Entry<String, byte[]> ent : map.entrySet()){
-//				System.out.println(ent.getKey());
+			for(Map.Entry<String, byte[]> ent : copy.entrySet()){
+				System.out.println(ent.getKey());
 				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 				prev += ent.getValue().length;
 			}
 			
-			System.out.println("res in sign:");
-			RSA.print(res);
+//			System.out.println("res in sign:");
+//			RSA.print(res);
 			
 			BigInteger msg = new BigInteger(1, SHA256.hash(res));
 			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray() ;
@@ -161,14 +163,17 @@ public class Msg implements Serializable {
 		// validate for each in map
 		BigInteger newHash;
 		try {
+			Map<String, byte[]> copy = new TreeMap<String, byte[]>(map);
+
 			int len = 0;
-			for(Map.Entry<String, byte[]> ent : map.entrySet())
+			for(Map.Entry<String, byte[]> ent : copy.entrySet())
 				len += ent.getValue().length;
 
 			byte[] res = new byte[len];
 			
 			int prev = 0;
-			for(Map.Entry<String, byte[]> ent : map.entrySet()){
+			for(Map.Entry<String, byte[]> ent : copy.entrySet()){
+				System.out.println(ent.getKey());
 				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 				prev += ent.getValue().length;
 			}

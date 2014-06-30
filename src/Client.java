@@ -68,6 +68,12 @@ public class Client {
 			String cmd = cin.next() ;
 			try
 			{
+				signWithCA(client) ;
+				authWithAuth(client);
+				voteWithCollector(client, "Mina");
+				if (true)
+					break ;
+				
 				if (cmd.equals("Exit")){
 					break ;
 				}else if (cmd.equals("Sign")){
@@ -96,7 +102,7 @@ public class Client {
 
 	private void setIndex(byte[] index) {
 		this.index = index ;
-		System.out.println(new String(index));
+		System.out.println("Index is : " + new String(index));
 	}
 
 	private void setSession(byte[] session) {
