@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
@@ -14,9 +15,13 @@ import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
+
+import algorithms.RSA;
 
 import ca.SignServer;
 
@@ -124,6 +129,7 @@ public class Authority extends Thread {
 						msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 						msg.sign(privateKey) ;
 						msg.encrypt(client_pu, KeyType.Public);
+						
 						//-------------------------
 						ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 						out.writeObject(msg);

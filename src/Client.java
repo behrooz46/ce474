@@ -4,11 +4,17 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
+
+
+import algorithms.RSA;
 
 import common.Helper;
 import common.KeyType;
@@ -47,10 +53,11 @@ public class Client {
 		//----------------------- read public key
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(1024);
-        this.publicKey  =  keyGen.genKeyPair().getPublic().getEncoded();
-        this.privateKey = keyGen.genKeyPair().getPrivate().getEncoded();
+        KeyPair pair = keyGen.genKeyPair();
+        this.publicKey  =  pair.getPublic().getEncoded();
+        this.privateKey = pair.getPrivate().getEncoded();
         
-	}
+    }
 
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 		

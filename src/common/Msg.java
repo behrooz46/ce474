@@ -53,7 +53,7 @@ public class Msg implements Serializable {
 			
 			int prev = 0;
 			for(Map.Entry<String, byte[]> ent : map.entrySet()){
-				System.out.println(ent.getKey());
+//				System.out.println(ent.getKey());
 				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 				prev += ent.getValue().length;
 			}
@@ -92,10 +92,13 @@ public class Msg implements Serializable {
 				for(Map.Entry<String, byte[]> ent : map.entrySet()){
 					byte[] enc = rsa.encrypt(new BigInteger(1, ent.getValue()), 
 							type == KeyType.Private ? ((RSAPrivateKey)pk).getPrivateExponent(): 
-								((RSAPublicKey)pk).getPublicExponent()).toByteArray(); 
-					res.put(ent.getKey(),enc 
-							);
-					System.out.println(ent.getValue().length + " : " + enc.length);
+								((RSAPublicKey)pk).getPublicExponent()).toByteArray();
+					if(type == KeyType.Private && enc[0] == 0){
+						byte[] tmp = enc;
+						enc = new byte[tmp.length - 1];
+						System.arraycopy(tmp, 1, enc, 0, enc.length);
+					}
+					res.put(ent.getKey(),enc);
 				}
 				
 				map = res;
@@ -169,8 +172,8 @@ public class Msg implements Serializable {
 				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 				prev += ent.getValue().length;
 			}
-			System.out.println("res in validate:");
-			RSA.print(res);
+//			System.out.println("res in validate:");
+//			RSA.print(res);
 			newHash = new BigInteger(1, SHA256.hash(res));
 
 		} catch (Exception e) {

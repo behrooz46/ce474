@@ -34,25 +34,31 @@ public class RSA {
 
    public static void main(String[] args) {
 	  try{
-//		  Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-//		  KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
-//		  keyPairGenerator.initialize(1024, new SecureRandom());
-//		  
-//		  KeyPair keyPair = keyPairGenerator.generateKeyPair();
-		  RSAPublicKey puk = (RSAPublicKey)(Helper.loadPublicKey("Keys/CA/public_key.der"));
-		  RSAPrivateKey prk= (RSAPrivateKey)(Helper.loadPrivateKey("Keys/CA/private_key.der"));
+		  Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+		  KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
+		  keyPairGenerator.initialize(1024, new SecureRandom());
 		  
-		  int N = 1024;
-	      RSA key = new RSA(puk.getModulus());
+		  KeyPair keyPair = keyPairGenerator.generateKeyPair();
+//		  RSAPublicKey puk = (RSAPublicKey)(Helper.loadPublicKey("Keys/CA/public_key.der"));
+//		  RSAPrivateKey prk= (RSAPrivateKey)(Helper.loadPrivateKey("Keys/CA/private_key.der"));
+		  
+		  RSAPublicKey puk = (RSAPublicKey)keyPair.getPublic();
+		  RSAPrivateKey prk= (RSAPrivateKey)keyPair.getPrivate();
+		  
+		  RSA key = new RSA(puk.getModulus());
 	//      System.out.println(key);
 	 
 	      // create random message, encrypt and decrypt
 //	      BigInteger message = new BigInteger(N-1, random);
-	      byte[] test = new byte[50];
-	      for(int i = 0 ; i < test.length ; i++){
-	    	  test[i] = (byte)i;
-	      }
-	      BigInteger message = new BigInteger(test);
+		  SecureRandom sr = new SecureRandom();
+
+		  
+		byte[] session = new byte[32];
+//			byte[] iv = new byte[16];
+		for(int i = 0 ; i < 50 ; i++){
+		sr.nextBytes(session);
+
+	      BigInteger message = new BigInteger(1, session);
 //	      System.out.println(message.toByteArray().length);
 	
 	      //// create message by converting string to integer
@@ -60,12 +66,12 @@ public class RSA {
 	      // byte[] bytes = s.getBytes();
 	      // BigInteger message = new BigInteger(s);
 	      
-	      BigInteger encrypt = key.encrypt(message, puk.getPublicExponent());
+	      BigInteger encrypt = key.encrypt(message, prk.getPrivateExponent());
 //	      System.out.println(encrypt.toByteArray().length);
-	      BigInteger decrypt = key.decrypt(encrypt, prk.getPrivateExponent());
+	      BigInteger decrypt = key.decrypt(encrypt, puk.getPublicExponent());
 	      System.out.println("message   = " + message);
 	      System.out.println("encrpyted = " + encrypt);
-	      System.out.println("decrypted = " + decrypt);
+	      System.out.println("decrypted = " + decrypt);}
 	  }
 	  catch(Exception e){
 		  e.printStackTrace();
@@ -73,7 +79,7 @@ public class RSA {
    }
    
    public static void print(byte[] data){
-	   System.out.println("RSA print");
+//	   System.out.println("RSA print");
 		for (byte b : data) {
 			   System.out.format("%x ", b);
 		}
