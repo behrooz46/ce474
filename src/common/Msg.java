@@ -38,9 +38,9 @@ public class Msg implements Serializable {
 	public void sign(byte[] key) {
 		// sign for each in map
 		try{
-			RSAPrivateKey pk = (RSAPrivateKey)SignServer.arrayToPrivateKey(key);
+			RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
 			algorithms.RSA rsa = new algorithms.RSA(pk.getModulus());
-			BigInteger msg = new BigInteger(SHA256.hash(serialize(map)));
+			BigInteger msg = new BigInteger(SHA256.hash(Helper.serialize(map)));
 			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
 		}
 		catch(Exception e){
@@ -52,9 +52,9 @@ public class Msg implements Serializable {
 	public void encrypt(byte[] key) {
 		// encrypt each section separately
 		try{
-			RSAPublicKey pk = (RSAPublicKey)SignServer.arrayToPublicKey(key);
+			RSAPublicKey pk = (RSAPublicKey)Helper.arrayToPublicKey(key);
 			algorithms.RSA rsa = new RSA(pk.getModulus());
-			BigInteger msg = new BigInteger(serialize(map));
+			BigInteger msg = new BigInteger(Helper.serialize(map));
 			body = rsa.encrypt(msg, pk.getPublicExponent()).toByteArray();
 		}
 		catch(Exception e){
@@ -66,11 +66,11 @@ public class Msg implements Serializable {
 	public void decrypt(byte[] key) {
 		// decrypt each section separately
 		try{
-			RSAPrivateKey pk = (RSAPrivateKey)SignServer.arrayToPrivateKey(key);
+			RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
 			algorithms.RSA rsa = new RSA(pk.getModulus());
 			BigInteger msg = new BigInteger(body);
 			body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
-			map = (HashMap<String, byte[]>)deserialize(body);
+			map = (HashMap<String, byte[]>)(Helper.deserialize(body));
 			
 		}
 		catch(Exception e){
@@ -98,33 +98,5 @@ public class Msg implements Serializable {
 			throw new NotValidMsgException() ;
 		return this.map.get(key);
 	}
-	
-	public static byte[] getByteArray(Msg msg) throws IOException{
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutput out = new ObjectOutputStream(bos);   
-		out.writeObject(msg);
-		byte[] innerByte = bos.toByteArray();
-		out.close();
-		bos.close();
-		return innerByte ;
-	}
-	
-	public static Msg getMsg(byte[] inner) throws IOException, ClassNotFoundException{
-		ByteArrayInputStream bis = new ByteArrayInputStream(inner);
-		ObjectInput oin = new ObjectInputStream(bis);
-		return (Msg) oin.readObject();
-	}
-	
-	private byte[] serialize(Object obj) throws IOException {
-        ByteArrayOutputStream b = new ByteArrayOutputStream();
-        ObjectOutputStream o = new ObjectOutputStream(b);
-        o.writeObject(obj);
-        return b.toByteArray();
-    }
-	
-	private Object deserialize(byte[] data) throws IOException, ClassNotFoundException{
-	    ByteArrayInputStream in = new ByteArrayInputStream(data);
-	    ObjectInputStream is = new ObjectInputStream(in);
-	    return is.readObject();
-	}
+		
 }

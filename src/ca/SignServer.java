@@ -26,6 +26,8 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.bouncycastle.x509.extension.AuthorityKeyIdentifierStructure;
 import org.bouncycastle.x509.extension.SubjectKeyIdentifierStructure;
 
+import common.Helper;
+
 
 public class SignServer{
 
@@ -34,52 +36,11 @@ public class SignServer{
 
 	public SignServer(String publicFile, String privateFile){
 		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-		caPair = new KeyPair(readPublicKey(publicFile), loadPrivateKey(privateFile));
+		caPair = new KeyPair(Helper.loadPublicKey(publicFile), Helper.loadPrivateKey(privateFile));
 		caCert = generateSelfSignedX509Certificate();
 	}
 	
-	private PrivateKey loadPrivateKey(String privateFile){
-		try{
-			File f = new File(privateFile);
-		    FileInputStream fis = new FileInputStream(f);
-		    DataInputStream dis = new DataInputStream(fis);
-		    byte[] keyBytes = new byte[(int)f.length()];
-		    dis.readFully(keyBytes);
-		    dis.close();
-	
-		    PKCS8EncodedKeySpec spec =
-		      new PKCS8EncodedKeySpec(keyBytes);
-		    KeyFactory kf = KeyFactory.getInstance("RSA");
-		    return kf.generatePrivate(spec);
-		}
-		catch(Exception e){
-			System.err.println("Error occured while trying to load private key");
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
-	private PublicKey readPublicKey(String publicFile){
-		try{
-			File f = new File(publicFile);
-		    FileInputStream fis = new FileInputStream(f);
-		    DataInputStream dis = new DataInputStream(fis);
-		    byte[] keyBytes = new byte[(int)f.length()];
-		    dis.readFully(keyBytes);
-		    dis.close();
-
-		    X509EncodedKeySpec spec =
-		      new X509EncodedKeySpec(keyBytes);
-		    KeyFactory kf = KeyFactory.getInstance("RSA");
-		    return kf.generatePublic(spec);
-		}
-		catch(Exception e){
-			System.err.println("Error occured while trying to load public key");
-			e.printStackTrace();
-			return null;
-		}
-	}
-	
+		
 	@SuppressWarnings("deprecation")
 	private X509Certificate generateSelfSignedX509Certificate(){
 		try{
@@ -202,26 +163,6 @@ public class SignServer{
 		}
 	}
 	
-	public static PublicKey arrayToPublicKey(byte[] key){
-		try {
-			return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(key));
-		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			return null;
-		}
-	}
 	
-	public static byte[] keyToArray(Key key){
-		return key.getEncoded();
-	}
-	
-	public static PrivateKey arrayToPrivateKey(byte[] key){
-		try {
-			return KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(key));
-		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			return null;
-		}
-	}
 	
 }

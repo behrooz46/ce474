@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Scanner;
 
+import common.Helper;
 import common.Msg;
 import common.NetworkErrorException;
 import common.NotValidMsgException;
@@ -119,7 +120,7 @@ public class Client {
 					msg = new Msg() ;
 					msg.status = 801 ; 
 					msg.put("cert", client.cert);
-					msg.put("inner", Msg.getByteArray(innerMsg));
+					msg.put("inner", Helper.serialize(innerMsg));
 					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 					msg.sign(client_private_key) ;
 					msg.encrypt(auth_public_key);
