@@ -1,26 +1,23 @@
 package ca;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-
-import sun.security.x509.*;
-
-import java.security.cert.*;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.security.*;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.SignatureException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Date;
 
 import javax.security.auth.x500.X500Principal;
 
 import org.bouncycastle.asn1.x509.X509Extensions;
-import org.bouncycastle.openssl.PEMWriter;
 import org.bouncycastle.x509.X509V1CertificateGenerator;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.bouncycastle.x509.extension.AuthorityKeyIdentifierStructure;
@@ -29,6 +26,7 @@ import org.bouncycastle.x509.extension.SubjectKeyIdentifierStructure;
 import common.Helper;
 
 
+@SuppressWarnings("deprecation")
 public class SignServer{
 
 	private X509Certificate caCert;
@@ -41,7 +39,6 @@ public class SignServer{
 	}
 	
 		
-	@SuppressWarnings("deprecation")
 	public X509Certificate generateSelfSignedX509Certificate(){
 		try{
 		    Date validityBeginDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
@@ -69,7 +66,6 @@ public class SignServer{
 		}
 	}
 	
-	@SuppressWarnings("deprecation")
 	public X509Certificate createCert(PublicKey publicKey, String sName){
 		try{
 			Date startDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);       
@@ -104,16 +100,8 @@ public class SignServer{
 		}
 	}
 	
-	public static boolean verify(X509Certificate cert, PublicKey key){
-		try {
-			cert.verify(key);
-			return true;
-		} catch (InvalidKeyException | CertificateException
-				| NoSuchAlgorithmException | NoSuchProviderException
-				| SignatureException e) {
-			// TODO Auto-generated catch block
-			return false;
-		}
+	public static void verify(X509Certificate cert, PublicKey key) throws InvalidKeyException, CertificateException, NoSuchAlgorithmException, NoSuchProviderException, SignatureException{
+		cert.verify(key);
 	}
 	
 	public PublicKey getPublicKey(){
@@ -131,7 +119,12 @@ public class SignServer{
 			KeyPair keyPair = keyPairGenerator.generateKeyPair();
 			
 			X509Certificate cert = ss.createCert(keyPair.getPublic(), "Farhad Shahmohammadi");
-			System.out.println(SignServer.verify(cert, ss.getPublicKey()));
+			try {
+				SignServer.verify(cert, ss.getPublicKey());
+				System.out.println("Valid");
+			} catch (Exception e) {
+				System.out.println("InValid");
+			}
 		}
 		catch(Exception e){
 			

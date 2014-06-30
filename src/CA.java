@@ -30,14 +30,12 @@ public class CA extends Thread{
 	private SignServer signServer;
 	
 	public CA(String conf) throws IOException {
-		// TODO read conf file
-		serverSocket = new ServerSocket(2222);
 		Scanner cin = new Scanner(new File(conf) );
 		//--------------
 		serverName = cin.next() ; serverPort = cin.nextInt() ;
 		String publicFile = cin.next() ;
 		String privateFile = "Keys/CA/private_key.der" ;
-		
+		serverSocket = new ServerSocket(serverPort);
 		//--------------
 		authServerName = cin.next() ; authServerPort = cin.nextInt() ;
 		authPublicKey = Helper.loadPublicKey(cin.next()).getEncoded() ;
