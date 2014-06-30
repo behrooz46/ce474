@@ -98,7 +98,14 @@ public class Client {
 					String vote = cin.next() ;
 					//-------------------------
 					Msg msg = new Msg() ;
-					msg.put("vote", vote.getBytes());
+					Msg innerMsg = new Msg() ;
+					
+					innerMsg.put("vote", vote.getBytes());
+					innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
+					innerMsg.encrypt(client.session);
+
+					msg.put("innner", Msg.getByteArray(innerMsg));
+					
 					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 					msg.sign(client_private_key) ;
 					msg.encrypt(auth_public_key);
@@ -110,7 +117,7 @@ public class Client {
 					//-------------------------
 					client.setIndex(ans.get("index"));
 					//-------------------------
-					Msg innerMsg = new Msg() ;
+					innerMsg = new Msg() ;
 					innerMsg.put("cert", client.cert);
 					innerMsg.put("index", client.index);
 					innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;

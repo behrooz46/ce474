@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.HashMap;
 import java.util.Scanner;
 
 import common.Msg;
@@ -21,10 +22,15 @@ public class Collector extends Thread {
 
 	private ServerSocket serverSocket;
 	private boolean finished;
+	private int innerIndex;
 
+	HashMap<Integer, byte[]> enc_votes ; 
+	
 	public Collector(String conf) throws IOException {
 		serverSocket = new ServerSocket(4444);
 		finished = false ;
+		innerIndex = 0 ;
+		enc_votes = new HashMap<Integer, byte[]>() ;
 	}
 	
 
@@ -77,7 +83,7 @@ public class Collector extends Thread {
 			InputStream inFromServer = socket.getInputStream();
 			ObjectInputStream in = new ObjectInputStream(inFromServer);
 			Object input = in.readObject() ;
-			
+			//TODO read hash map 
 			socket.close();
 			ans = (Msg) input ;
 		} catch (IOException e) {
@@ -109,16 +115,25 @@ public class Collector extends Thread {
 					server.close(); 
 					break; 
 				}
-				DataInputStream in = new DataInputStream(server.getInputStream());
-				String cert = in.readUTF() ;
-				
-				if ( validate(cert) ){
-					DataOutputStream out = new DataOutputStream(server.getOutputStream());
-					out.writeUTF("session");
-				}else{
-					DataOutputStream out = new DataOutputStream(server.getOutputStream());
-					out.writeUTF("session");
-				}
+
+				ObjectInputStream in = new ObjectInputStream(server.getInputStream());
+				Object input = in.readObject() ;
+				//-------------------------
+				Msg ans = (Msg) input ;
+				ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+				ans.decrypt(null) ;
+				ans.validate(null) ;
+				//-------------------------
+				byte[] index = getIndex(ans.get("inner")) ;
+				//-------------------------
+				Msg msg = new Msg() ;
+				msg.put("index", index);
+				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+				msg.sign(null) ;
+				msg.encrypt(null);
+				//-------------------------
+				ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+				out.writeObject(msg);
 				
 				server.close();
 			}catch(SocketTimeoutException s)
@@ -129,11 +144,20 @@ public class Collector extends Thread {
 			{
 				e.printStackTrace();
 				break;
+			} catch (NotValidMsgException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
 
-	private boolean validate(String cert) {
-		return false;
+	private byte[] getIndex(byte[] vote) {
+		enc_votes.put(new Integer(innerIndex), vote);
+		String ret = "" + innerIndex ;
+		innerIndex ++ ;
+		return ret.getBytes();
 	}
 }

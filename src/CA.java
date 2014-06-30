@@ -66,7 +66,6 @@ public class CA extends Thread{
 				ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 				out.writeObject(msg);
 				server.close();
-			
 			}catch(IOException e){
 				e.printStackTrace();
 			}catch(NotValidMsgException e){
