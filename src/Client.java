@@ -1,13 +1,14 @@
 
 
-import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.util.Scanner;
 
 import common.Msg;
@@ -17,7 +18,8 @@ import common.NotValidMsgException;
 public class Client {
 	private static final String id = "1";
 	byte[] cert;
-	private String publicKey;
+	
+	private byte[] publicKey, privateKey;
 	
 	private String caServerName;
 	private int caServerPort;
@@ -27,111 +29,40 @@ public class Client {
 	private int authServerPort;
 	private byte[] session;
 	private byte[] index;
+	public String name;
 
-	public Client(String fileName) throws IOException {
+	public Client(String conf, String name) throws IOException, NoSuchAlgorithmException {
+		this.name = name;
 		// TODO read conf file
-		caServerName = "localhost";
-		caServerPort = 2222;
-		authServerName = "localhost";
-		authServerPort = 3333;
-		collectServerName = "localhost";
-		collectServerPort = 4444;
+		Scanner cin = new Scanner(new File(conf) );
+		caServerName = cin.next() ; caServerPort = cin.nextInt() ;
+		authServerName = cin.next() ; authServerPort = cin.nextInt() ;
+		collectServerName = cin.next() ; collectServerPort = cin.nextInt() ;
 		//----------------------- read public key
-//		BufferedReader reader = new BufferedReader(new FileReader("src/client/"+ this.id +"/publickey.pem"));
-//		String line = null ; publicKey = "" ;
-//		while ((line = reader.readLine()) != null) {
-//			publicKey += line ;
-//			publicKey += "\n" ;
-//		}
-//		reader.close();
+		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(1024);
+        this.publicKey  =  keyGen.genKeyPair().getPublic().getEncoded();
+        this.privateKey = keyGen.genKeyPair().getPrivate().getEncoded();
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 		
 		Scanner cin = new Scanner(System.in);
-		Client client = new Client("conf.txt") ;
+		Client client = new Client("conf.txt", "Behrooz") ;
 		
-		byte[] ca_public_key = null ;
-		byte[] auth_public_key = null ;
-		byte[] client_private_key = null ;
-//		byte[] client_publick_key = null ;
-		String name = cin.next() ;
 		while(true){
 			String cmd = cin.next() ;
 			try
 			{
-				
 				if (cmd.equals("Exit")){
 					break ;
 				}else if (cmd.equals("Sign")){
-					//-------------------------
-					Msg msg = new Msg() ;
-					msg.put("public", client.getPublickKey().getBytes());
-					msg.put("name", name.getBytes());
-					
-					msg.setEncryptionMethod(Msg.Encryption_NONE) ;
-					msg.sign(client_private_key) ;
-					msg.encrypt(ca_public_key);
-					//-------------------------
-					Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
-					ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-					ans.decrypt(client_private_key) ;
-					ans.validate(ca_public_key) ; 
-					//-------------------------
-					client.setCertificate(ans.get("cert")); 
-				}else if (cmd.equals("Session")){
-					//-------------------------
-					Msg msg = new Msg() ;
-					msg.status = 800 ;
-					msg.put("cert", client.cert);
-					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-					msg.sign(client_private_key) ;
-					msg.encrypt(auth_public_key);
-					//-------------------------
-					Msg ans = client.communicate(client.authServerName, client.authServerPort, msg) ;
-					ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-					ans.decrypt(client_private_key) ;
-					ans.validate(auth_public_key) ; 
-					//-------------------------
-					client.setSession(ans.get("session")); 
+					signWithCA(client) ;
+				}else if (cmd.equals("Auth")){
+					authWithAuth(client);
 				}else if (cmd.equals("Vote")){
 					String vote = cin.next() ;
-					//-------------------------
-					Msg msg = new Msg() ;
-					Msg innerMsg = new Msg() ;
-					
-					innerMsg.put("vote", vote.getBytes());
-					innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
-					innerMsg.encrypt(client.session);
-
-					msg.put("innner", Msg.getByteArray(innerMsg));
-					
-					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-					msg.sign(client_private_key) ;
-					msg.encrypt(auth_public_key);
-					//-------------------------
-					Msg ans = client.communicate(client.collectServerName, client.collectServerPort, msg) ;
-					ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-					ans.decrypt(client_private_key) ;
-					ans.validate(auth_public_key) ; 
-					//-------------------------
-					client.setIndex(ans.get("index"));
-					//-------------------------
-					innerMsg = new Msg() ;
-					innerMsg.put("cert", client.cert);
-					innerMsg.put("index", client.index);
-					innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
-					innerMsg.encrypt(client.session);
-					//=============
-					msg = new Msg() ;
-					msg.status = 801 ; 
-					msg.put("cert", client.cert);
-					msg.put("inner", Msg.getByteArray(innerMsg));
-					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-					msg.sign(client_private_key) ;
-					msg.encrypt(auth_public_key);
-					//-------------------------
-					client.communicate(client.authServerName, client.authServerPort, msg) ;
+					voteWithCollector(client, vote);
 				}else{
 					System.out.println("Available Commands Are:\n1- Sign\n2- Auth\n3- Vote <name>\n4- Exit");
 				}
@@ -146,30 +77,18 @@ public class Client {
 		cin.close(); 
 	}
 
-	private void setFinished(byte[] message) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void setIndex(byte[] message) {
-		this.index = message ;
-		
+	private void setIndex(byte[] index) {
+		this.index = index ;
 	}
 
 	private void setSession(byte[] session) {
-		System.out.println("**recieved: " + new String(session));
 		this.session = session ;
 	}
 
 	private void setCertificate(byte[] cert) {
-		System.out.println("**recieved: " + new String(cert));
 		this.cert = cert ;
 	}
 
-	private String getPublickKey(){
-		return "PublicKey";
-	}
-	
 	private Msg communicate(String server, int port, Msg msg) throws NetworkErrorException {
 		Msg ans = null ; 
 		//------------------------- 
@@ -197,4 +116,86 @@ public class Client {
 		//------------------------- 
 		return ans;
 	}
+	
+	
+	
+	
+	
+
+	private static void voteWithCollector(Client client, String vote) throws NetworkErrorException, NotValidMsgException, IOException {
+		//-------------------------
+		Msg msg = new Msg() ;
+		Msg innerMsg = new Msg() ;
+		
+		innerMsg.put("vote", vote.getBytes());
+		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
+		innerMsg.encrypt(client.session);
+
+		msg.put("innner", Msg.getByteArray(innerMsg));
+		
+		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+		msg.sign(client.privateKey) ;
+		msg.encrypt(null);
+		//-------------------------
+		Msg ans = client.communicate(client.collectServerName, client.collectServerPort, msg) ;
+		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+		ans.decrypt(client.privateKey) ;
+		ans.validate(null) ; 
+		//-------------------------
+		client.setIndex(ans.get("index"));
+		//-------------------------
+		innerMsg = new Msg() ;
+		innerMsg.put("cert", client.cert);
+		innerMsg.put("index", client.index);
+		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
+		innerMsg.encrypt(client.session);
+		//=============
+		msg = new Msg() ;
+		msg.status = 801 ; 
+		msg.put("cert", client.cert);
+		msg.put("inner", Msg.getByteArray(innerMsg));
+		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+		msg.sign(client.privateKey) ;
+		msg.encrypt(null);
+		//-------------------------
+		client.communicate(client.authServerName, client.authServerPort, msg) ;
+		
+	}
+
+	private static void authWithAuth(Client client) throws NetworkErrorException, NotValidMsgException {
+		//-------------------------
+		Msg msg = new Msg() ;
+		msg.status = 800 ;
+		msg.put("cert", client.cert);
+		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+		msg.sign(client.privateKey) ;
+		msg.encrypt(null);
+		//-------------------------
+		Msg ans = client.communicate(client.authServerName, client.authServerPort, msg) ;
+		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+		ans.decrypt(client.privateKey) ;
+		ans.validate(null) ; 
+		//-------------------------
+		client.setSession(ans.get("session")); 
+		
+	}
+
+	private static void signWithCA(Client client) throws NetworkErrorException, NotValidMsgException {
+		//-------------------------
+		Msg msg = new Msg() ;
+		msg.put("public", client.publicKey);
+		msg.put("name", client.name.getBytes());
+		
+		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
+		msg.sign(client.privateKey) ;
+		msg.encrypt(null);
+		//-------------------------
+		Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
+		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+		ans.decrypt(client.privateKey) ;
+		ans.validate(null) ; 
+		//-------------------------
+		client.setCertificate(ans.get("cert")); 
+	}
+
 }
