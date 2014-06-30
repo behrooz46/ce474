@@ -52,11 +52,22 @@ public class Msg implements Serializable {
 	public void encrypt(byte[] key) {
 		// encrypt each section separately
 		try{
-			RSAPublicKey pk = (RSAPublicKey)Helper.arrayToPublicKey(key);
-			algorithms.RSA rsa = new RSA(pk.getModulus());
-//			BigInteger msg = new BigInteger(Helper.serialize(map));
-//			body = rsa.encrypt(msg, pk.getPublicExponent()).toByteArray();
-			body = Helper.serialize(map);
+			switch (encryptionMethod) {
+			case Encryption_RSA:
+				RSAPublicKey pk = (RSAPublicKey)Helper.arrayToPublicKey(key);
+				algorithms.RSA rsa = new RSA(pk.getModulus());
+//				BigInteger msg = new BigInteger(Helper.serialize(map));
+//				body = rsa.encrypt(msg, pk.getPublicExponent()).toByteArray();
+				body = Helper.serialize(map);
+				break;
+			case Encryption_AES:
+				break;
+			case Encryption_NONE:
+				break;
+			default:
+				break;
+			}
+			
 		}
 		catch(Exception e){
 			System.err.println("Error while retrieving key in encryption");
@@ -67,12 +78,20 @@ public class Msg implements Serializable {
 	public void decrypt(byte[] key) {
 		// decrypt each section separately
 		try{
-			RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
-			algorithms.RSA rsa = new RSA(pk.getModulus());
-//			BigInteger msg = new BigInteger(body);
-//			body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
-			map = (HashMap<String, byte[]>)(Helper.deserialize(body));
-//			sign = rsa.decrypt(new BigInteger(sign), pk.getPrivateExponent()).toByteArray();
+			switch(encryptionMethod){
+			case Encryption_RSA:
+				RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
+				algorithms.RSA rsa = new RSA(pk.getModulus());
+				BigInteger msg = new BigInteger(body);
+				body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
+				map = (HashMap<String, byte[]>)(Helper.deserialize(body));
+				sign = rsa.decrypt(new BigInteger(sign), pk.getPrivateExponent()).toByteArray();
+				break;
+			case Encryption_AES:
+				break;
+			case Encryption_NONE:
+				break;
+			}
 			
 		}
 		catch(Exception e){
@@ -84,16 +103,19 @@ public class Msg implements Serializable {
 
 	public void validate(byte[] key) throws NotValidMsgException{
 		// validate for each in map
+		BigInteger newHash;
 		try {
-			BigInteger newHash = new BigInteger(SHA256.hash(Helper.serialize(map)));
-			BigInteger prevHash = new BigInteger(sign);
-			if(!newHash.equals(prevHash)){
-				throw new NotValidMsgException();
-			}
-		} catch (IOException e) {
+			newHash = new BigInteger(SHA256.hash(Helper.serialize(map)));
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return;
 		}
+		BigInteger prevHash = new BigInteger(sign);
+		if(!newHash.equals(prevHash)){
+			throw new NotValidMsgException();
+		}
+		System.out.println("here");
 			
 	}
 
