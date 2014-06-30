@@ -123,5 +123,9 @@ public class Helper {
 			e.printStackTrace();
 		}
 	}
+	
+	public static void main(String[] args) {
+		loadPublicKey("Keys/CA/public_key.der");
+	}
 
 }
