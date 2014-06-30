@@ -114,7 +114,6 @@ public class Authority extends Thread {
 				}else{
 					ans.setEncryptionMethod(Msg.Encryption_NONE) ;
 					ans.encrypt(privateKey, KeyType.Private) ;
-					ans.validate(null) ;
 					
 					byte[] cert = ans.get("cert") ;
 					X509Certificate realCert = this.validateCert(cert) ;
@@ -205,7 +204,7 @@ public class Authority extends Thread {
 		if (   c2index.containsKey(id) == true )
 			throw new NotValidMsgException() ;
 		
-		System.out.println("Vote added : " + Helper.getStrByteArray(session) + "\n"+ new String(index));
+		System.out.println("Vote added : " + Helper.getStrByteArray(session) + " " + new String(index));
 		c2index.put(id, index);  
 	}
 
