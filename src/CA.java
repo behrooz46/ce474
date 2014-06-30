@@ -46,7 +46,7 @@ public class CA extends Thread{
 		cin.close();
 		//--------------
 		publicKey = Helper.loadPublicKey(publicFile).getEncoded() ;
-		privateKey = Helper.loadPublicKey(privateFile).getEncoded() ;
+		privateKey = Helper.loadPrivateKey(privateFile).getEncoded() ;
 		
 		this.signServer = new SignServer(publicFile, privateFile) ;
 		this.cert = signServer.generateSelfSignedX509Certificate() ;
@@ -76,8 +76,8 @@ public class CA extends Thread{
 				Object input = in.readObject() ;
 				//-------------------------
 				Msg ans = (Msg) input ;
-				ans.setEncryptionMethod(Msg.Encryption_NONE) ;
-				ans.decrypt(null) ;
+				ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+				ans.decrypt(privateKey) ;
 				ans.validate(null) ;
 				//-------------------------		
 				byte[] pu = ans.get("public") ;

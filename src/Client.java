@@ -199,14 +199,14 @@ public class Client {
 		msg.put("public", client.publicKey);
 		msg.put("name", client.name.getBytes());
 		
-		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
+		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 		msg.sign(null) ;
-		msg.encrypt(null);
+		msg.encrypt(client.caPublicKey);
 		//-------------------------
 		Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 		ans.decrypt(client.privateKey) ;
-		ans.validate(client.caPublicKey) ; 
+//		ans.validate(client.caPublicKey) ; 
 		//-------------------------
 		client.setCertificate(ans.get("cert")); 
 	}

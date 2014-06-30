@@ -54,8 +54,9 @@ public class Msg implements Serializable {
 		try{
 			RSAPublicKey pk = (RSAPublicKey)Helper.arrayToPublicKey(key);
 			algorithms.RSA rsa = new RSA(pk.getModulus());
-			BigInteger msg = new BigInteger(Helper.serialize(map));
-			body = rsa.encrypt(msg, pk.getPublicExponent()).toByteArray();
+//			BigInteger msg = new BigInteger(Helper.serialize(map));
+//			body = rsa.encrypt(msg, pk.getPublicExponent()).toByteArray();
+			body = Helper.serialize(map);
 		}
 		catch(Exception e){
 			System.err.println("Error while retrieving key in encryption");
@@ -68,13 +69,14 @@ public class Msg implements Serializable {
 		try{
 			RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
 			algorithms.RSA rsa = new RSA(pk.getModulus());
-			BigInteger msg = new BigInteger(body);
-			body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
+//			BigInteger msg = new BigInteger(body);
+//			body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
 			map = (HashMap<String, byte[]>)(Helper.deserialize(body));
 			
 		}
 		catch(Exception e){
 			System.err.println("Error while retrieving key in decryption");
+			e.printStackTrace();
 		}
 	}
 
