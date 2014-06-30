@@ -1,5 +1,6 @@
 package algorithms;
 
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 
 import common.Helper;
@@ -28,9 +29,9 @@ import common.Helper;
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public final class Rijndael {
+public final class AES {
 
-    public Rijndael() {
+    public AES() {
     }
 
     /**
@@ -635,19 +636,92 @@ public final class Rijndael {
         }
     }
     
+    public byte[] blockEnc(byte[] in)
+    {
+    	int block_size = 16;
+    	byte[] res = new byte[(in.length / block_size) * block_size 
+    	                      + (in.length % block_size == 0 ? 0 : block_size) 
+    	                      +  block_size];
+    	
+    	byte[] len_bytes = ByteBuffer.allocate(4).putInt(in.length).array();
+		byte[] len_block = new byte[block_size];
+		System.arraycopy(len_bytes, 0, len_block, block_size -len_bytes.length, len_bytes.length);
+		for(int i = 0 ; i < len_block.length - len_bytes.length ; i++){
+			len_block[i] = 0x00;
+		}
+		
+		byte[] len_cipher = new byte[block_size]; 
+		encrypt(len_block, len_cipher);
+		System.arraycopy(len_cipher, 0, res, 0, block_size);
+		
+    	for(int i = 0 ; i < in.length/block_size ; i++){
+    		byte[] block = new byte[block_size];
+    		System.arraycopy(in, i * block_size, block, 0, block_size);
+    		byte[] res_block = new byte[block_size];
+    		encrypt(block, res_block);
+    		System.arraycopy(res_block, 0, res, (i + 1) * block_size, block_size);
+    	}
+    	
+    	int rem = in.length % block_size;
+		if(rem > 0){
+			byte[] block = new byte[block_size];
+			System.arraycopy(in, in.length - rem, block, 0, rem);
+			for(int i = 0 ; i < block_size - rem ; i++){
+				block[rem + i] = 0x00;
+			}
+			
+			byte[] resBlock = new byte[block_size];
+			encrypt(block, resBlock);
+			
+			System.arraycopy(resBlock, 0, res, res.length - block_size, block_size);
+		}
+    	return res;
+    }
+    
+    public byte[] blockDec(byte[] in)
+    {
+    	int block_size = 16;
+    	byte[] res = new byte[in.length];
+    	
+    	
+    	for(int i = 0 ; i < in.length/block_size ; i++){
+    		byte[] block = new byte[block_size];
+    		System.arraycopy(in, i * block_size, block, 0, block_size);
+    		byte[] res_block = new byte[block_size];
+    		decrypt(block, res_block);
+    		System.arraycopy(res_block, 0, res, i * block_size, block_size);
+    	}
+    	
+    	byte[] res_len = new byte[4];
+		System.arraycopy(res, block_size - 4, res_len, 0, 4);
+		ByteBuffer wrapped = ByteBuffer.wrap(res_len); // big-endian by default
+		int len = wrapped.getInt();
+		
+		byte[] final_res = new byte[len];
+    	System.arraycopy(res, block_size, final_res, 0, len);
+    	
+    	return final_res;
+    }
+    
+    
+    
     public static void main(String[] args) {
-		Rijndael tmp = new Rijndael() ;
+		AES tmp = new AES() ;
 		SecureRandom sr = new SecureRandom();
 		byte[] session = new byte[16];
 		sr.nextBytes(session);
 		
 		tmp.makeKey(session, 128);
-		byte[] cp = new byte[16];
-		byte[] dp = new byte[16];
-		Helper.printByteArray(session); 
-		tmp.encrypt(session, cp);
-		Helper.printByteArray(cp); 
-		tmp.decrypt(cp, dp);
-		Helper.printByteArray(dp); 
+		byte[] in = new byte[100];
+		for(int i = 0 ; i < 100 ; i++){
+			in[i] = (byte)i;
+		}
+		
+		byte[] out = tmp.blockEnc(in);
+		RSA.print(out);
+		byte[] res = tmp.blockDec(out);
+		RSA.print(res);
+		
+		 
 	}
 }
