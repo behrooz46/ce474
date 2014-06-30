@@ -158,10 +158,14 @@ public class Helper {
 	}
 
 	public static void printByteArray(byte[] publicKey){
+        System.out.println(getStrByteArray(publicKey));
+	}
+	
+	public static String getStrByteArray(byte[] publicKey){
 		StringBuffer retString = new StringBuffer();
         for (int i = 0; i < publicKey.length; ++i) {
             retString.append(Integer.toHexString(0x0100 + (publicKey[i] & 0x00FF)).substring(1));
         }
-        System.out.println(retString);
+        return retString.toString() ;
 	}
 }

@@ -15,7 +15,6 @@ import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
-import ca.SignServer;
 import common.Helper;
 import common.Msg;
 import common.NetworkErrorException;
@@ -40,7 +39,7 @@ public class Client {
 
 	public Client(String conf, String name) throws IOException, NoSuchAlgorithmException {
 		this.name = name;
-		// TODO read conf file
+		//-----------------------
 		Scanner cin = new Scanner(new File(conf) );
 		caServerName = cin.next() ; caServerPort = cin.nextInt() ;
 		caPublicKey = Helper.loadPublicKey(cin.next()).getEncoded() ;
@@ -94,16 +93,18 @@ public class Client {
 
 	private void setIndex(byte[] index) {
 		this.index = index ;
+		System.out.println(new String(index));
 	}
 
 	private void setSession(byte[] session) {
+		Helper.printByteArray(session);
 		this.session = session ;
 	}
 
 	private void setCertificate(byte[] cert) throws ClassNotFoundException, IOException {
 		X509Certificate ret = (X509Certificate) Helper.deserialize(cert) ;
-		System.out.println("Certifcate Receieved:");
-		Helper.printCert(ret);  
+//		Helper.printCert(ret);
+		System.out.println("Certificate Recieved but not printed :D");
 		this.cert = cert ;
 	}
 
@@ -149,7 +150,7 @@ public class Client {
 		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
 		innerMsg.encrypt(client.session);
 
-		msg.put("innner", Helper.serialize(innerMsg));
+		msg.put("inner", Helper.serialize(innerMsg));
 		
 		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 		msg.sign(client.privateKey) ;
@@ -186,16 +187,15 @@ public class Client {
 		msg.status = 800 ;
 		msg.put("cert", client.cert);
 		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-		msg.sign(client.privateKey) ;
-		msg.encrypt(null);
+		msg.sign(null) ;
+		msg.encrypt(client.authPublicKey);
 		//-------------------------
 		Msg ans = client.communicate(client.authServerName, client.authServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 		ans.decrypt(client.privateKey) ;
-		ans.validate(null) ; 
+		ans.validate(client.authPublicKey) ; 
 		//-------------------------
 		client.setSession(ans.get("session")); 
-		
 	}
 
 	private static void signWithCA(Client client) throws NetworkErrorException, NotValidMsgException, ClassNotFoundException, IOException {

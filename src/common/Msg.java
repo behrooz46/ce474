@@ -40,6 +40,8 @@ public class Msg implements Serializable {
 	
 	
 	public void sign(byte[] key) {
+		if (true)
+			return ;
 		// sign for each in map
 		try{
 			RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
@@ -56,6 +58,10 @@ public class Msg implements Serializable {
 	public void encrypt(byte[] key) {
 		// encrypt each section separately
 		try{
+			body = Helper.serialize(map);
+			if (true)
+				return ;
+			
 			switch (encryptionMethod) {
 			case Encryption_RSA:
 				RSAPublicKey pk = (RSAPublicKey)(Helper.arrayToPublicKey(key));
@@ -154,8 +160,13 @@ public class Msg implements Serializable {
 
 
 	public void decrypt(byte[] key) {
+		
 		// decrypt each section separately
 		try{
+			map = (HashMap<String, byte[]>)(Helper.deserialize(body));
+			if (true)
+				return ;
+			
 			switch(encryptionMethod){
 			case Encryption_RSA:
 				
@@ -222,6 +233,8 @@ public class Msg implements Serializable {
 
 
 	public void validate(byte[] key) throws NotValidMsgException{
+		if (true)
+			return ;
 		// validate for each in map
 		BigInteger newHash;
 		try {
