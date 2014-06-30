@@ -1,3 +1,6 @@
 localhost 2222
+Keys/CA/public_key.der
 localhost 3333
+Keys/Auth/public_key.der
 localhost 4444
+Keys/Collector/public_key.der

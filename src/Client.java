@@ -22,23 +22,25 @@ public class Client {
 	
 	private byte[] publicKey, privateKey;
 	
-	private String caServerName;
-	private int caServerPort;
-	private String collectServerName;
-	private int collectServerPort;
-	private String authServerName;
-	private int authServerPort;
+	private String caServerName, collectServerName, authServerName;
+	private int caServerPort, collectServerPort, authServerPort;
+	private byte[] caPublicKey, collectPublicKey, authPublicKey;
+	
 	private byte[] session;
 	private byte[] index;
 	public String name;
+	
 
 	public Client(String conf, String name) throws IOException, NoSuchAlgorithmException {
 		this.name = name;
 		// TODO read conf file
 		Scanner cin = new Scanner(new File(conf) );
 		caServerName = cin.next() ; caServerPort = cin.nextInt() ;
+		caPublicKey = Helper.loadPublicKey(cin.next()).getEncoded() ;
 		authServerName = cin.next() ; authServerPort = cin.nextInt() ;
+		authPublicKey = Helper.loadPublicKey(cin.next()).getEncoded() ;
 		collectServerName = cin.next() ; collectServerPort = cin.nextInt() ;
+		collectPublicKey = Helper.loadPublicKey(cin.next()).getEncoded() ;
 		cin.close();
 		//----------------------- read public key
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
@@ -189,13 +191,13 @@ public class Client {
 		msg.put("name", client.name.getBytes());
 		
 		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
-		msg.sign(client.privateKey) ;
+		msg.sign(null) ;
 		msg.encrypt(null);
 		//-------------------------
 		Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 		ans.decrypt(client.privateKey) ;
-		ans.validate(null) ; 
+		ans.validate(client.caPublicKey) ; 
 		//-------------------------
 		client.setCertificate(ans.get("cert")); 
 	}
