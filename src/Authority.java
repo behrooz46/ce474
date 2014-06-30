@@ -134,6 +134,8 @@ public class Authority extends Thread {
 						ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 						out.writeObject(msg);
 					}else if (ans.status == 801){
+						ans.validate(client_pu);
+						
 						byte[] session = this.getSessionKey(cert);
 						byte[] tmpByte = ans.get("inner");
 						//-------------------------

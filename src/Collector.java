@@ -178,16 +178,16 @@ public class Collector extends Thread {
 				Object input = in.readObject() ;
 				//-------------------------
 				Msg ans = (Msg) input ;
-				ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+				ans.setEncryptionMethod(Msg.Encryption_NONE) ;
 				ans.encrypt(null, KeyType.SYM) ;
 				ans.validate(null) ;
 				//-------------------------
-				byte[] index = getIndex(ans.get("inner")) ;
+				byte[] index = getIndex(ans.get("vote")) ;
 				//-------------------------
 				Msg msg = new Msg() ;
 				msg.put("index", index);
-				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-				msg.sign(null) ;
+				msg.setEncryptionMethod(Msg.Encryption_NONE) ;
+				msg.sign(privateKey) ;
 				msg.encrypt(null, KeyType.SYM);
 				//-------------------------
 				ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());

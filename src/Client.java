@@ -147,26 +147,19 @@ public class Client {
 	private static void voteWithCollector(Client client, String vote) throws NetworkErrorException, NotValidMsgException, IOException {
 		//-------------------------
 		Msg msg = new Msg() ;
-		Msg innerMsg = new Msg() ;
 		
-		innerMsg.put("vote", vote.getBytes());
-		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
-		innerMsg.encrypt(client.session, KeyType.SYM);
-
-		msg.put("inner", Helper.serialize(innerMsg));
-		
-		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-		msg.sign(client.privateKey) ;
-		msg.encrypt(null, KeyType.SYM);
+		msg.put("vote", vote.getBytes());
+		msg.setEncryptionMethod(Msg.Encryption_AES) ;
+		msg.encrypt(client.session, KeyType.SYM);
 		//-------------------------
 		Msg ans = client.communicate(client.collectServerName, client.collectServerPort, msg) ;
-		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-		ans.encrypt(client.privateKey, KeyType.Private) ;
-		ans.validate(null) ; 
+		ans.setEncryptionMethod(Msg.Encryption_NONE) ;
+		ans.encrypt(null, KeyType.Private) ;
+		ans.validate(client.collectPublicKey) ; 
 		//-------------------------
 		client.setIndex(ans.get("index"));
 		//-------------------------
-		innerMsg = new Msg() ;
+		Msg innerMsg = new Msg() ;
 		innerMsg.put("cert", client.cert);
 		innerMsg.put("index", client.index);
 		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
@@ -176,7 +169,7 @@ public class Client {
 		msg.status = 801 ; 
 		msg.put("cert", client.cert);
 		msg.put("inner", Helper.serialize(innerMsg));
-		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 		msg.sign(client.privateKey) ;
 		msg.encrypt(null, KeyType.SYM);
 		//-------------------------
