@@ -128,4 +128,11 @@ public class Helper {
 		loadPublicKey("Keys/CA/public_key.der");
 	}
 
+	public static void printByteArray(byte[] publicKey){
+		StringBuffer retString = new StringBuffer();
+        for (int i = 0; i < publicKey.length; ++i) {
+            retString.append(Integer.toHexString(0x0100 + (publicKey[i] & 0x00FF)).substring(1));
+        }
+        System.out.println(retString);
+	}
 }
