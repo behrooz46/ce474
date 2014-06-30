@@ -62,18 +62,14 @@ public class Client {
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
 		
 		Scanner cin = new Scanner(System.in);
-		Client client = new Client("conf.txt", "Behrooz") ;
+		System.out.println("Enter Client Name with No Use: ");
+		String cmd = cin.next() ;
+		Client client = new Client("conf.txt", cmd) ;
 		
 		while(true){
-			String cmd = cin.next() ;
+			cmd = cin.next() ;
 			try
 			{
-				signWithCA(client) ;
-				authWithAuth(client);
-				voteWithCollector(client, "Mina");
-				if (true)
-					break ;
-				
 				if (cmd.equals("Exit")){
 					break ;
 				}else if (cmd.equals("Sign")){
@@ -91,10 +87,10 @@ public class Client {
 				e.printStackTrace();
 			} catch (NetworkErrorException e) {
 				//TODO Network Error
-				e.printStackTrace();
+//				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 		cin.close(); 
@@ -106,6 +102,7 @@ public class Client {
 	}
 
 	private void setSession(byte[] session) {
+		System.out.print("Client Session is: ");
 		Helper.printByteArray(session);
 		this.session = session ;
 	}
@@ -113,7 +110,7 @@ public class Client {
 	private void setCertificate(byte[] cert) throws ClassNotFoundException, IOException {
 		X509Certificate ret = (X509Certificate) Helper.deserialize(cert) ;
 //		Helper.printCert(ret);
-		System.out.println("Certificate Recieved but not printed :D");
+		System.out.println("Certificate Recieved but not printed for security reasons :D");
 		this.cert = cert ;
 	}
 
@@ -134,11 +131,11 @@ public class Client {
 			ans = (Msg) input ;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+//			e.printStackTrace();
 			throw new NetworkErrorException() ;
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+//			e.printStackTrace();
 			throw new NetworkErrorException() ;
 		}
 		//------------------------- 
@@ -156,7 +153,7 @@ public class Client {
 		
 		msg.put("vote", vote.getBytes());
 		msg.setEncryptionMethod(Msg.Encryption_AES) ;
-		msg.encrypt(client.session, KeyType.SYM);
+		msg.encrypt(client.session, KeyType.SYM_ENC);
 		//-------------------------
 		Msg ans = client.communicate(client.collectServerName, client.collectServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_NONE) ;
@@ -169,7 +166,7 @@ public class Client {
 		innerMsg.put("cert", client.cert);
 		innerMsg.put("index", client.index);
 		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
-		innerMsg.encrypt(client.session, KeyType.SYM);
+		innerMsg.encrypt(client.session, KeyType.SYM_ENC);
 		//=============
 		msg = new Msg() ;
 		msg.status = 801 ; 
@@ -177,7 +174,7 @@ public class Client {
 		msg.put("inner", Helper.serialize(innerMsg));
 		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 		msg.sign(client.privateKey) ;
-		msg.encrypt(null, KeyType.SYM);
+		msg.encrypt(null, KeyType.NONE);
 		//-------------------------
 		client.communicate(client.authServerName, client.authServerPort, msg) ;
 		

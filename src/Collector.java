@@ -24,17 +24,25 @@ public class Collector extends Thread {
 	private int innerIndex;
 
 	HashMap<Integer, byte[]> enc_votes ;
+	HashMap<String, Integer> answers ; 
+	
 	
 	private byte[] publicKey, privateKey;
 	
 	private String serverName, authServerName, caServerName;
 	private int serverPort, authServerPort, caServerPort;
 	private byte[] authPublicKey, caPublicKey;
+	private Integer max_vote_cnt;
+	private String max_vote;
 	
 	public Collector(String conf) throws IOException {
 		finished = false ;
 		innerIndex = 0 ;
 		enc_votes = new HashMap<Integer, byte[]>() ;
+		answers = new HashMap<String, Integer>() ;
+		
+		max_vote_cnt = -1; 
+		max_vote = "No Vote" ;
 		
 		Scanner cin = new Scanner(new File(conf) );
 		//--------------
@@ -68,7 +76,7 @@ public class Collector extends Thread {
 						break ;
 					} catch (NetworkErrorException e) {
 						// TODO Auto-generated catch block
-						e.printStackTrace();
+//						e.printStackTrace();
 					} catch (NotValidMsgException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -79,7 +87,7 @@ public class Collector extends Thread {
 			cin.close();
 		}catch(IOException e)
 		{
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 
 	}
@@ -88,39 +96,48 @@ public class Collector extends Thread {
 		synchronized (finished) {
 			finished = true ;	
 		}
-		//---------------
-		Msg msg = new Msg(), ans = null ;
-		msg.put("request", null);
-		
-		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
-		msg.status = 700 ;
-		msg.sign(null) ;
-		msg.encrypt(null, KeyType.SYM);
 		//------------------------- 
 		try {
-			Socket socket = new Socket("localhost", 3333);
-			OutputStream outToServer = socket.getOutputStream();
-			ObjectOutputStream out = new ObjectOutputStream(outToServer);
-			out.writeObject(msg);
-			//------------------------- 
-			InputStream inFromServer = socket.getInputStream();
-			ObjectInputStream in = new ObjectInputStream(inFromServer);
-			Object input = in.readObject() ;
-			socket.close();
-			//-------------------------
-			ans = (Msg) input ;
-			ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-			ans.encrypt(null, KeyType.SYM) ;
-			ans.validate(null) ;
-			HashMap<Integer, byte[]> map = (HashMap<Integer, byte[]>) Helper.deserialize( ans.get("map") );
+			HashMap<Integer, byte[]> map = new HashMap<Integer, byte[]>() ;
+			
+			for(Integer index : enc_votes.keySet()){
+//				System.err.println("getting for index: " + index);
+				Socket socket = new Socket("localhost", 3333);
+				OutputStream outToServer = socket.getOutputStream();
+				ObjectOutputStream out = new ObjectOutputStream(outToServer);
+				
+				
+				Msg msg = new Msg(), ans = null ;
+				msg.put("index", new String(index + "").getBytes());
+				
+				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+				msg.status = 700 ;
+				msg.sign(privateKey) ;
+				msg.encrypt(authPublicKey, KeyType.Public);
+				out.writeObject(msg);
+				//-------------------------
+				InputStream inFromServer = socket.getInputStream();
+				ObjectInputStream in = new ObjectInputStream(inFromServer);
+				
+				Object input = in.readObject() ;
+				//-------------------------
+				ans = (Msg) input ;
+				ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+				ans.encrypt(privateKey, KeyType.Private) ;
+				ans.validate(authPublicKey) ;
+				
+				map.put(index, ans.get("session")) ;
+				
+				socket.close();
+			}
 			process(map);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+//			e.printStackTrace();
 			throw new NetworkErrorException() ;
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+//			e.printStackTrace();
 			throw new NetworkErrorException() ;
 		}
 	}
@@ -129,27 +146,36 @@ public class Collector extends Thread {
 	private void process(HashMap<Integer, byte[]> map) {
 		for (Integer index : map.keySet()) {
 			try {
-				System.out.println(index);
+				System.out.print(index);
+				Helper.printByteArray(map.get(index));
 				
 				byte[] session = map.get(index);
-				Msg msg = (Msg) Helper.deserialize(enc_votes.get(index)) ;
+				Msg msg = new Msg() ;
+				msg.put("vote", enc_votes.get(index)) ;
 				
 				msg.setEncryptionMethod(Msg.Encryption_AES);
-				msg.encrypt(session, KeyType.SYM);
+				msg.encrypt(session, KeyType.SYM_DEC);
+				
 				String vote = new String(msg.get("vote"));
 				
-				System.out.println(index + " " + vote) ;
+				
+				System.out.println("Vote for #" + index + " = " + vote) ;
+				
+				if ( answers.containsKey(vote) == false )
+					answers.put(vote, 0) ;
+				answers.put(vote, answers.get(vote) + 1) ;
+				if (max_vote_cnt < answers.get(vote)){
+					max_vote = vote ;
+					max_vote_cnt = answers.get(vote) ; 
+				}
 			} catch (NotValidMsgException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
+			
+			 
  		}
+		System.out.println("Winner is " + max_vote + " with #" + max_vote_cnt);
 	}
 
 
@@ -179,7 +205,7 @@ public class Collector extends Thread {
 				//-------------------------
 				Msg ans = (Msg) input ;
 				ans.setEncryptionMethod(Msg.Encryption_NONE) ;
-				ans.encrypt(null, KeyType.SYM) ;
+				ans.encrypt(null, KeyType.NONE) ;
 				ans.validate(null) ;
 				//-------------------------
 				byte[] index = getIndex(ans.get("vote")) ;
@@ -188,7 +214,7 @@ public class Collector extends Thread {
 				msg.put("index", index);
 				msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 				msg.sign(privateKey) ;
-				msg.encrypt(null, KeyType.SYM);
+				msg.encrypt(null, KeyType.NONE);
 				//-------------------------
 				ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 				out.writeObject(msg);
@@ -196,25 +222,23 @@ public class Collector extends Thread {
 				server.close();
 			}catch(SocketTimeoutException s)
 			{
-				System.out.println("Socket timed out!");
+//				System.out.println("Socket timed out!");
 				break;
 			}catch(IOException e)
 			{
-				e.printStackTrace();
+//				e.printStackTrace();
 				break;
 			} catch (NotValidMsgException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 	}
 
 	private byte[] getIndex(byte[] vote) {
-		System.out.println(new String(vote));
-		
 		enc_votes.put(new Integer(innerIndex), vote);
 		String ret = "" + innerIndex ;
 		innerIndex ++ ;

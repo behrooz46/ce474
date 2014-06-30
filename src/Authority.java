@@ -22,9 +22,7 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 import algorithms.RSA;
-
 import ca.SignServer;
-
 import common.Helper;
 import common.KeyType;
 import common.Msg;
@@ -78,7 +76,7 @@ public class Authority extends Thread {
 			au.start();
 		}catch(IOException e)
 		{
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 
 	}
@@ -97,17 +95,17 @@ public class Authority extends Thread {
 				
 				//-------------------------
 				if (ans.status == 700){
-					ans.setEncryptionMethod(Msg.Encryption_NONE) ;
+					ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 					ans.encrypt(privateKey, KeyType.Private) ;
 					ans.validate(collectPublicKey) ;
 					
+					Integer index = new Integer(new String(ans.get("index"))) ;
+					
 					Msg msg = new Msg() ;
-					msg.put("map", getSIndex());
-					
+					msg.put("session", getIndex(index));
 					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
-					msg.sign(null);
-					msg.encrypt(null, KeyType.SYM); 
-					
+					msg.sign(privateKey);
+					msg.encrypt(collectPublicKey, KeyType.Public); 
 					
 					ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 					out.writeObject(msg);
@@ -140,10 +138,12 @@ public class Authority extends Thread {
 						//-------------------------
 						Msg inner = (Msg)(Helper.deserialize(tmpByte));
 						inner.setEncryptionMethod(Msg.Encryption_AES) ;
-						inner.encrypt(session, KeyType.SYM);
+						inner.encrypt(session, KeyType.SYM_DEC);
 						byte[] cert2 = inner.get("cert");
 						byte[] index = inner.get("index");
 						//-------------------------
+//						Helper.printByteArray(cert) ;
+//						Helper.printByteArray(cert2) ;
 						if ( Arrays.equals(cert, cert2) == false )
 							throw new NotValidMsgException() ;
 						this.addVote(cert, session, index);
@@ -155,7 +155,7 @@ public class Authority extends Thread {
 				}
 				server.close();
 			}catch(IOException e){
-				e.printStackTrace();
+//				e.printStackTrace();
 			}catch(NotValidMsgException e){
 				//Not Valid Msg 
 				e.printStackTrace();
@@ -180,18 +180,13 @@ public class Authority extends Thread {
 		}
 	}
 
-	private byte[] getSIndex() throws IOException {
+	private byte[] getIndex(Integer in){
 		HashMap<Integer, byte[]> map = new HashMap<Integer, byte[]> () ;
-		c2cert.put("a", null);
-		c2session.put("a", "salam".getBytes());
-		c2index.put("a", "0".getBytes());
-		
 		for (String id : c2cert.keySet()) {
 			Integer index = new Integer(new String(c2index.get(id))); 
 			map.put(index, c2session.get(id)) ;
-			System.out.println("PRIININININIT.... " + index + " " + new String(c2session.get(id)) );
 		}
-		return Helper.serialize(map) ;
+		return map.get(in) ;
 	}
 
 	private void addVote(byte[] cert, byte[] session, byte[] index) throws NotValidMsgException {
@@ -235,7 +230,7 @@ public class Authority extends Thread {
 		byte[] session = new byte[32];
 //		byte[] iv = new byte[16];
 		sr.nextBytes(session);
-		Helper.printByteArray(session);
+//		Helper.printByteArray(session);
 //		sr.nextBytes(iv);
 		c2cert.put(id, cert);
 		c2session.put(id, session);

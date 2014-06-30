@@ -57,7 +57,7 @@ public class CA extends Thread{
 			ca.start();
 		}catch(IOException e)
 		{
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 
 	}
@@ -92,13 +92,13 @@ public class CA extends Thread{
 				out.writeObject(msg);
 				server.close();
 			}catch(IOException e){
-				e.printStackTrace();
+//				e.printStackTrace();
 			}catch(NotValidMsgException e){
 				//Not Valid Msg 
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 	}

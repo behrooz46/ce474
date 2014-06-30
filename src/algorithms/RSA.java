@@ -39,22 +39,15 @@ public class RSA {
 		  keyPairGenerator.initialize(1024, new SecureRandom());
 		  
 		  KeyPair keyPair = keyPairGenerator.generateKeyPair();
-//		  RSAPublicKey puk = (RSAPublicKey)(Helper.loadPublicKey("Keys/CA/public_key.der"));
-//		  RSAPrivateKey prk= (RSAPrivateKey)(Helper.loadPrivateKey("Keys/CA/private_key.der"));
 		  
 		  RSAPublicKey puk = (RSAPublicKey)keyPair.getPublic();
 		  RSAPrivateKey prk= (RSAPrivateKey)keyPair.getPrivate();
 		  
 		  RSA key = new RSA(puk.getModulus());
-	//      System.out.println(key);
-	 
-	      // create random message, encrypt and decrypt
-//	      BigInteger message = new BigInteger(N-1, random);
 		  SecureRandom sr = new SecureRandom();
 
 		  
 		byte[] session = new byte[32];
-//			byte[] iv = new byte[16];
 		for(int i = 0 ; i < 50 ; i++){
 		sr.nextBytes(session);
 

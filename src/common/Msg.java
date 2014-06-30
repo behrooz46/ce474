@@ -55,7 +55,7 @@ public class Msg implements Serializable {
 			
 			int prev = 0;
 			for(Map.Entry<String, byte[]> ent : copy.entrySet()){
-				System.out.println(ent.getKey());
+//				System.out.println(ent.getKey());
 				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 				prev += ent.getValue().length;
 			}
@@ -67,13 +67,15 @@ public class Msg implements Serializable {
 			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray() ;
 		}
 		catch(Exception e){
-			System.err.println("Error while sigining");
+//			System.err.println("Error while sigining");
 		}
 	}
 
 
 	public void encrypt(byte[] key, KeyType type) {
 		// encrypt each section separately
+		HashMap<String, byte[]> res = new HashMap<String, byte[]>();
+		
 		try{
 			switch (encryptionMethod) {
 			case Encryption_RSA:
@@ -89,7 +91,7 @@ public class Msg implements Serializable {
 				  
 				algorithms.RSA rsa = new RSA(pk.getModulus());
 				
-				HashMap<String, byte[]> res = new HashMap<String, byte[]>();
+				
 				
 				for(Map.Entry<String, byte[]> ent : map.entrySet()){
 					byte[] enc = rsa.encrypt(new BigInteger(1, ent.getValue()), 
@@ -107,6 +109,21 @@ public class Msg implements Serializable {
 				
 				break;
 			case Encryption_AES:
+				AES aes = new AES() ;
+				aes.makeKey(key, 128);
+				
+				for(Map.Entry<String, byte[]> ent : map.entrySet()){
+					byte[] enc ;
+					if(type == KeyType.SYM_ENC){
+						enc = aes.blockEnc(ent.getValue()) ;
+					}else{
+						enc = aes.blockDec(ent.getValue()) ;
+					}
+					res.put(ent.getKey(),enc);
+				}
+				
+				map = res;
+				
 				break;
 			case Encryption_NONE:
 				break;
@@ -116,8 +133,8 @@ public class Msg implements Serializable {
 			
 		}
 		catch(Exception e){
-			System.err.println("Error while retrieving key in encryption");
-			e.printStackTrace();
+//			System.err.println("Error while retrieving key in encryption");
+//			e.printStackTrace();
 		}
 	}
 
@@ -173,7 +190,7 @@ public class Msg implements Serializable {
 			
 			int prev = 0;
 			for(Map.Entry<String, byte[]> ent : copy.entrySet()){
-				System.out.println(ent.getKey());
+//				System.out.println(ent.getKey());
 				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 				prev += ent.getValue().length;
 			}
@@ -183,7 +200,7 @@ public class Msg implements Serializable {
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+//			e.printStackTrace();
 			return;
 		}
 		byte[] sign_byte = sign ;
