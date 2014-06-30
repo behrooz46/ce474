@@ -30,7 +30,7 @@ public class Msg implements Serializable {
 	
 	public int status ; 
 	public HashMap<String, byte[]> map ;
-
+	public byte[] sign ;
 
 	public Msg() {
 		// TODO Auto-generated constructor stub
@@ -58,8 +58,7 @@ public class Msg implements Serializable {
 			
 			
 			BigInteger msg = new BigInteger(1, SHA256.hash(res));
-			map.put("sign", rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray());
-//			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
+			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray() ;
 		}
 		catch(Exception e){
 			System.err.println("Error while sigining");
@@ -141,19 +140,15 @@ public class Msg implements Serializable {
 		BigInteger newHash;
 		try {
 			int len = 0;
-			for(Map.Entry<String, byte[]> ent : map.entrySet()){
-				if(!ent.getKey().equals("sign"))
-					len += ent.getValue().length;
-			}
+			for(Map.Entry<String, byte[]> ent : map.entrySet())
+				len += ent.getValue().length;
 
 			byte[] res = new byte[len];
 			
 			int prev = 0;
 			for(Map.Entry<String, byte[]> ent : map.entrySet()){
-				if(!ent.getKey().equals("sign")){
-					System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
-					prev += ent.getValue().length;
-				}
+				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
+				prev += ent.getValue().length;
 			}
 			newHash = new BigInteger(1, SHA256.hash(res));
 
@@ -162,7 +157,7 @@ public class Msg implements Serializable {
 			e.printStackTrace();
 			return;
 		}
-		byte[] sign_byte = map.get("sign");
+		byte[] sign_byte = sign ;
 		if(sign_byte != null){
 			RSAPublicKey pk = (RSAPublicKey)(Helper.arrayToPublicKey(key));
 			algorithms.RSA rsa = new RSA(pk.getModulus());

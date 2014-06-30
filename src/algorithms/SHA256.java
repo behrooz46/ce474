@@ -74,7 +74,7 @@ public class SHA256 {
 			byte[] bytes = ByteBuffer.allocate(4).putInt(H[i]).array();
 			System.arraycopy(bytes, 0, res, 4*i, 4);
 		}
-		print(res);
+//		print(res);
 		return res;
 	}
 
@@ -98,6 +98,7 @@ public class SHA256 {
 	}
 	
 	public static void print(byte[] data){
+		System.out.println("SHA: ");
 		for (byte b : data) {
 			   System.out.format("%x ", b);
 		}
