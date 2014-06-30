@@ -104,31 +104,6 @@ public class SignServer{
 		}
 	}
 	
-	
-	public static void printCert(X509Certificate cert){
-		System.out.println(new String(new char[80]).replace("\0", "="));
-	    System.out.println("CERTIFICATE TO_STRING");
-	    System.out.println(new String(new char[80]).replace("\0", "="));
-	    System.out.println();
-	    System.out.println(cert);
-	    System.out.println();
-
-	    System.out.println(new String(new char[80]).replace("\0", "="));
-	    System.out.println("CERTIFICATE PEM");
-	    System.out.println(new String(new char[80]).replace("\0", "="));
-	    System.out.println();
-	    try{
-		    PEMWriter pemWriter = new PEMWriter(new PrintWriter(System.out));
-		    pemWriter.writeObject(cert);
-		    pemWriter.flush();
-		    System.out.println();
-		    pemWriter.close();
-	    }
-	    catch(Exception e){
-	    	e.printStackTrace();
-	    }
-	}
-	
 	public static boolean verify(X509Certificate cert, PublicKey key){
 		try {
 			cert.verify(key);

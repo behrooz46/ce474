@@ -26,7 +26,7 @@ public class RSA {
       return message.modPow(publicKey, mod);
    }
 
-   BigInteger decrypt(BigInteger encrypted, BigInteger privateKey) {
+   public BigInteger decrypt(BigInteger encrypted, BigInteger privateKey) {
       return encrypted.modPow(privateKey, mod);
    }
 

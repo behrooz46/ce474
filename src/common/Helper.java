@@ -9,14 +9,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+
+import org.bouncycastle.openssl.PEMWriter;
 
 public class Helper {
 	public static byte[] serialize(Object obj) throws IOException {
@@ -123,6 +127,31 @@ public class Helper {
 			e.printStackTrace();
 		}
 	}
+	
+	public static void printCert(X509Certificate cert){
+		System.out.println(new String(new char[80]).replace("\0", "="));
+	    System.out.println("CERTIFICATE TO_STRING");
+	    System.out.println(new String(new char[80]).replace("\0", "="));
+	    System.out.println();
+	    System.out.println(cert);
+	    System.out.println();
+
+	    System.out.println(new String(new char[80]).replace("\0", "="));
+	    System.out.println("CERTIFICATE PEM");
+	    System.out.println(new String(new char[80]).replace("\0", "="));
+	    System.out.println();
+	    try{
+		    PEMWriter pemWriter = new PEMWriter(new PrintWriter(System.out));
+		    pemWriter.writeObject(cert);
+		    pemWriter.flush();
+		    System.out.println();
+		    pemWriter.close();
+	    }
+	    catch(Exception e){
+	    	e.printStackTrace();
+	    }
+	}
+
 	
 	public static void main(String[] args) {
 		loadPublicKey("Keys/CA/public_key.der");

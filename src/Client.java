@@ -98,7 +98,7 @@ public class Client {
 	private void setCertificate(byte[] cert) throws ClassNotFoundException, IOException {
 		X509Certificate ret = (X509Certificate) Helper.deserialize(cert) ;
 		System.out.println("Certifcate Receieved:");
-		SignServer.printCert(ret); 
+		Helper.printCert(ret);  
 		this.cert = cert ;
 	}
 
