@@ -44,7 +44,7 @@ public class Msg implements Serializable {
 			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
 		}
 		catch(Exception e){
-			System.err.println("Error while retrieving key in sigining");
+			System.err.println("Error while sigining");
 		}
 	}
 
@@ -71,6 +71,7 @@ public class Msg implements Serializable {
 			BigInteger msg = new BigInteger(body);
 			body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
 			map = (HashMap<String, byte[]>)(Helper.deserialize(body));
+			sign = rsa.decrypt(new BigInteger(sign), pk.getPrivateExponent()).toByteArray();
 			
 		}
 		catch(Exception e){
@@ -80,8 +81,18 @@ public class Msg implements Serializable {
 
 
 	public void validate(byte[] key) throws NotValidMsgException{
-		// TODO Auto-generated method stub
 		// validate for each in map
+		try {
+			BigInteger newHash = new BigInteger(SHA256.hash(Helper.serialize(map)));
+			BigInteger prevHash = new BigInteger(sign);
+			if(!newHash.equals(prevHash)){
+				throw new NotValidMsgException();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+			
 	}
 
 
