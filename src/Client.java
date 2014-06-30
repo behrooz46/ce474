@@ -11,6 +11,7 @@ import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
 import common.Helper;
+import common.KeyType;
 import common.Msg;
 import common.NetworkErrorException;
 import common.NotValidMsgException;
@@ -143,17 +144,17 @@ public class Client {
 		
 		innerMsg.put("vote", vote.getBytes());
 		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
-		innerMsg.encrypt(client.session);
+		innerMsg.encrypt(client.session, KeyType.SYM);
 
 		msg.put("inner", Helper.serialize(innerMsg));
 		
 		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 		msg.sign(client.privateKey) ;
-		msg.encrypt(null);
+		msg.encrypt(null, KeyType.SYM);
 		//-------------------------
 		Msg ans = client.communicate(client.collectServerName, client.collectServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-		ans.decrypt(client.privateKey) ;
+		ans.encrypt(client.privateKey, KeyType.Private) ;
 		ans.validate(null) ; 
 		//-------------------------
 		client.setIndex(ans.get("index"));
@@ -162,7 +163,7 @@ public class Client {
 		innerMsg.put("cert", client.cert);
 		innerMsg.put("index", client.index);
 		innerMsg.setEncryptionMethod(Msg.Encryption_AES) ;
-		innerMsg.encrypt(client.session);
+		innerMsg.encrypt(client.session, KeyType.SYM);
 		//=============
 		msg = new Msg() ;
 		msg.status = 801 ; 
@@ -170,7 +171,7 @@ public class Client {
 		msg.put("inner", Helper.serialize(innerMsg));
 		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 		msg.sign(client.privateKey) ;
-		msg.encrypt(null);
+		msg.encrypt(null, KeyType.SYM);
 		//-------------------------
 		client.communicate(client.authServerName, client.authServerPort, msg) ;
 		
@@ -183,11 +184,11 @@ public class Client {
 		msg.put("cert", client.cert);
 		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 		msg.sign(null) ;
-		msg.encrypt(client.authPublicKey);
+		msg.encrypt(client.authPublicKey, KeyType.Public);
 		//-------------------------
 		Msg ans = client.communicate(client.authServerName, client.authServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-		ans.decrypt(client.privateKey) ;
+		ans.encrypt(client.privateKey, KeyType.Private) ;
 		ans.validate(client.authPublicKey) ; 
 		//-------------------------
 		client.setSession(ans.get("session")); 
@@ -201,11 +202,11 @@ public class Client {
 		
 		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 		msg.sign(null) ;
-		msg.encrypt(client.caPublicKey);
+		msg.encrypt(client.caPublicKey, KeyType.Public);
 		//-------------------------
 		Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_NONE) ;
-		ans.decrypt(client.privateKey) ;
+		ans.encrypt(client.privateKey, KeyType.Private) ;
 		ans.validate(client.caPublicKey) ; 
 //		-------------------------
 		client.setCertificate(ans.get("cert")); 

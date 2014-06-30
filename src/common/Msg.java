@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ public class Msg implements Serializable {
 	
 	public int status ; 
 	public HashMap<String, byte[]> map ;
-
+	public byte[] sign ;
 
 	public Msg() {
 		// TODO Auto-generated constructor stub
@@ -61,8 +62,7 @@ public class Msg implements Serializable {
 			RSA.print(res);
 			
 			BigInteger msg = new BigInteger(1, SHA256.hash(res));
-			map.put("sign", rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray());
-//			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
+			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray() ;
 		}
 		catch(Exception e){
 			System.err.println("Error while sigining");
@@ -70,20 +70,32 @@ public class Msg implements Serializable {
 	}
 
 
-	public void encrypt(byte[] key) {
+	public void encrypt(byte[] key, KeyType type) {
 		// encrypt each section separately
 		try{
 			switch (encryptionMethod) {
 			case Encryption_RSA:
-				RSAPublicKey pk = (RSAPublicKey)(Helper.arrayToPublicKey(key));
+				RSAKey pk;
+				
+				if(type == KeyType.Public){
+					pk = (RSAPublicKey)(Helper.arrayToPublicKey(key));
+				}
+				else{
+					pk = (RSAPrivateKey)(Helper.arrayToPrivateKey(key));
+				}
+				
 				  
 				algorithms.RSA rsa = new RSA(pk.getModulus());
 				
 				HashMap<String, byte[]> res = new HashMap<String, byte[]>();
 				
 				for(Map.Entry<String, byte[]> ent : map.entrySet()){
-					res.put(ent.getKey(), 
-							rsa.encrypt(new BigInteger(1, ent.getValue()), pk.getPublicExponent()).toByteArray());
+					byte[] enc = rsa.encrypt(new BigInteger(1, ent.getValue()), 
+							type == KeyType.Private ? ((RSAPrivateKey)pk).getPrivateExponent(): 
+								((RSAPublicKey)pk).getPublicExponent()).toByteArray(); 
+					res.put(ent.getKey(),enc 
+							);
+					System.out.println(ent.getValue().length + " : " + enc.length);
 				}
 				
 				map = res;
@@ -105,38 +117,41 @@ public class Msg implements Serializable {
 	}
 
 
-	public void decrypt(byte[] key) {
-		
-		// decrypt each section separately
-		try{
-			switch(encryptionMethod){
-			case Encryption_RSA:
-				
-				RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
-				algorithms.RSA rsa = new RSA(pk.getModulus());
-				
-				HashMap<String, byte[]> res = new HashMap<String, byte[]>();
-				
-				for(Map.Entry<String, byte[]> ent : map.entrySet()){
-					res.put(ent.getKey(), 
-							rsa.encrypt(new BigInteger(1, ent.getValue()), pk.getPrivateExponent()).toByteArray());
-				}
-				
-				map = res;
-				
-				break;
-			case Encryption_AES:
-				break;
-			case Encryption_NONE:
-				break;
-			}
-			
-		}
-		catch(Exception e){
-			System.err.println("Error while retrieving key in decryption");
-			e.printStackTrace();
-		}
-	}
+//	public void decrypt(byte[] key) {
+//		
+//		// decrypt each section separately
+//		try{
+//			switch(encryptionMethod){
+//			case Encryption_RSA:
+//				
+//				RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
+//				algorithms.RSA rsa = new RSA(pk.getModulus());
+//				
+//				HashMap<String, byte[]> res = new HashMap<String, byte[]>();
+//				
+//				for(Map.Entry<String, byte[]> ent : map.entrySet()){
+//					byte[] enc = rsa.encrypt(new BigInteger(1, ent.getValue()), pk.getPrivateExponent()).toByteArray();
+//					res.put(ent.getKey(), enc 
+//							);
+//					System.out.println(ent.getValue().length + " : " + enc.length);
+//					RSA.print(enc);
+//				}
+//				
+//				map = res;
+//				
+//				break;
+//			case Encryption_AES:
+//				break;
+//			case Encryption_NONE:
+//				break;
+//			}
+//			
+//		}
+//		catch(Exception e){
+//			System.err.println("Error while retrieving key in decryption");
+//			e.printStackTrace();
+//		}
+//	}
 
 
 	public void validate(byte[] key) throws NotValidMsgException{
@@ -144,20 +159,15 @@ public class Msg implements Serializable {
 		BigInteger newHash;
 		try {
 			int len = 0;
-			for(Map.Entry<String, byte[]> ent : map.entrySet()){
-				if(!ent.getKey().equals("sign"))
-					len += ent.getValue().length;
-			}
+			for(Map.Entry<String, byte[]> ent : map.entrySet())
+				len += ent.getValue().length;
 
 			byte[] res = new byte[len];
 			
 			int prev = 0;
 			for(Map.Entry<String, byte[]> ent : map.entrySet()){
-				if(!ent.getKey().equals("sign")){
-					System.out.println(ent.getKey());
-					System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
-					prev += ent.getValue().length;
-				}
+				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
+				prev += ent.getValue().length;
 			}
 			System.out.println("res in validate:");
 			RSA.print(res);
@@ -168,7 +178,7 @@ public class Msg implements Serializable {
 			e.printStackTrace();
 			return;
 		}
-		byte[] sign_byte = map.get("sign");
+		byte[] sign_byte = sign ;
 		if(sign_byte != null){
 			RSAPublicKey pk = (RSAPublicKey)(Helper.arrayToPublicKey(key));
 			algorithms.RSA rsa = new RSA(pk.getModulus());

@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 import common.Helper;
+import common.KeyType;
 import common.Msg;
 import common.NetworkErrorException;
 import common.NotValidMsgException;
@@ -94,7 +95,7 @@ public class Collector extends Thread {
 		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 		msg.status = 700 ;
 		msg.sign(null) ;
-		msg.encrypt(null);
+		msg.encrypt(null, KeyType.SYM);
 		//------------------------- 
 		try {
 			Socket socket = new Socket("localhost", 3333);
@@ -109,7 +110,7 @@ public class Collector extends Thread {
 			//-------------------------
 			ans = (Msg) input ;
 			ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-			ans.decrypt(null) ;
+			ans.encrypt(null, KeyType.SYM) ;
 			ans.validate(null) ;
 			HashMap<Integer, byte[]> map = (HashMap<Integer, byte[]>) Helper.deserialize( ans.get("map") );
 			process(map);
@@ -134,7 +135,7 @@ public class Collector extends Thread {
 				Msg msg = (Msg) Helper.deserialize(enc_votes.get(index)) ;
 				
 				msg.setEncryptionMethod(Msg.Encryption_AES);
-				msg.decrypt(session);
+				msg.encrypt(session, KeyType.SYM);
 				String vote = new String(msg.get("vote"));
 				
 				System.out.println(index + " " + vote) ;
@@ -178,7 +179,7 @@ public class Collector extends Thread {
 				//-------------------------
 				Msg ans = (Msg) input ;
 				ans.setEncryptionMethod(Msg.Encryption_RSA) ;
-				ans.decrypt(null) ;
+				ans.encrypt(null, KeyType.SYM) ;
 				ans.validate(null) ;
 				//-------------------------
 				byte[] index = getIndex(ans.get("inner")) ;
@@ -187,7 +188,7 @@ public class Collector extends Thread {
 				msg.put("index", index);
 				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 				msg.sign(null) ;
-				msg.encrypt(null);
+				msg.encrypt(null, KeyType.SYM);
 				//-------------------------
 				ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 				out.writeObject(msg);
@@ -215,7 +216,7 @@ public class Collector extends Thread {
 		try {
 			Msg inner = (Msg) Helper.deserialize(vote);
 			inner.setEncryptionMethod(Msg.Encryption_AES);
-			inner.decrypt(null);
+			inner.encrypt(null, KeyType.SYM);
 			System.out.println("Vote: " + new String(inner.get("vote")));
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block

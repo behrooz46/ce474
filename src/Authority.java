@@ -21,6 +21,7 @@ import java.util.Scanner;
 import ca.SignServer;
 
 import common.Helper;
+import common.KeyType;
 import common.Msg;
 import common.NotValidMsgException;
 
@@ -92,7 +93,7 @@ public class Authority extends Thread {
 				//-------------------------
 				if (ans.status == 700){
 					ans.setEncryptionMethod(Msg.Encryption_NONE) ;
-					ans.decrypt(privateKey) ;
+					ans.encrypt(privateKey, KeyType.Private) ;
 					ans.validate(collectPublicKey) ;
 					
 					Msg msg = new Msg() ;
@@ -100,14 +101,14 @@ public class Authority extends Thread {
 					
 					msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 					msg.sign(null);
-					msg.encrypt(null); 
+					msg.encrypt(null, KeyType.SYM); 
 					
 					
 					ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 					out.writeObject(msg);
 				}else{
 					ans.setEncryptionMethod(Msg.Encryption_NONE) ;
-					ans.decrypt(privateKey) ;
+					ans.encrypt(privateKey, KeyType.Private) ;
 					ans.validate(null) ;
 					
 					byte[] cert = ans.get("cert") ;
@@ -122,7 +123,7 @@ public class Authority extends Thread {
 						msg.put("session", session);
 						msg.setEncryptionMethod(Msg.Encryption_RSA) ;
 						msg.sign(privateKey) ;
-						msg.encrypt(client_pu);
+						msg.encrypt(client_pu, KeyType.Public);
 						//-------------------------
 						ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 						out.writeObject(msg);
@@ -132,7 +133,7 @@ public class Authority extends Thread {
 						//-------------------------
 						Msg inner = (Msg)(Helper.deserialize(tmpByte));
 						inner.setEncryptionMethod(Msg.Encryption_AES) ;
-						inner.decrypt(session);
+						inner.encrypt(session, KeyType.SYM);
 						byte[] cert2 = inner.get("cert");
 						byte[] index = inner.get("index");
 						//-------------------------
@@ -224,9 +225,10 @@ public class Authority extends Thread {
 
 		SecureRandom sr = new SecureRandom();
 
-		byte[] session = new byte[16];
+		byte[] session = new byte[32];
 //		byte[] iv = new byte[16];
 		sr.nextBytes(session);
+		Helper.printByteArray(session);
 //		sr.nextBytes(iv);
 		c2cert.put(id, cert);
 		c2session.put(id, session);

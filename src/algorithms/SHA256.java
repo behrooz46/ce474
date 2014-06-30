@@ -98,6 +98,7 @@ public class SHA256 {
 	}
 	
 	public static void print(byte[] data){
+		System.out.println("SHA: ");
 		for (byte b : data) {
 			   System.out.format("%x ", b);
 		}

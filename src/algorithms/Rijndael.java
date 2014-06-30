@@ -1,4 +1,9 @@
 package algorithms;
+
+import java.security.SecureRandom;
+
+import common.Helper;
+
 /**
  * Rijndael.java
  *
@@ -629,4 +634,20 @@ public final class Rijndael {
             rdk = null;
         }
     }
+    
+    public static void main(String[] args) {
+		Rijndael tmp = new Rijndael() ;
+		SecureRandom sr = new SecureRandom();
+		byte[] session = new byte[16];
+		sr.nextBytes(session);
+		
+		tmp.makeKey(session, 128);
+		byte[] cp = new byte[16];
+		byte[] dp = new byte[16];
+		Helper.printByteArray(session); 
+		tmp.encrypt(session, cp);
+		Helper.printByteArray(cp); 
+		tmp.decrypt(cp, dp);
+		Helper.printByteArray(dp); 
+	}
 }

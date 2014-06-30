@@ -73,6 +73,7 @@ public class RSA {
    }
    
    public static void print(byte[] data){
+	   System.out.println("RSA print");
 		for (byte b : data) {
 			   System.out.format("%x ", b);
 		}
