@@ -39,13 +39,25 @@ public class Msg implements Serializable {
 	
 	
 	public void sign(byte[] key) {
-//		if (true)
-//			return ;
-//		// sign for each in map
 		try{
 			RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
 			algorithms.RSA rsa = new algorithms.RSA(pk.getModulus());
-			BigInteger msg = new BigInteger(SHA256.hash(Helper.serialize(map)));
+			
+			int len = 0;
+			for(Map.Entry<String, byte[]> ent : map.entrySet()){
+				len += ent.getValue().length;
+			}
+
+			byte[] res = new byte[len];
+			
+			int prev = 0;
+			for(Map.Entry<String, byte[]> ent : map.entrySet()){
+				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
+				prev += ent.getValue().length;
+			}
+			
+			
+			BigInteger msg = new BigInteger(1, SHA256.hash(res));
 			map.put("sign", rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray());
 //			sign = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
 		}
@@ -128,7 +140,23 @@ public class Msg implements Serializable {
 		// validate for each in map
 		BigInteger newHash;
 		try {
-			newHash = new BigInteger(SHA256.hash(Helper.serialize(map)));
+			int len = 0;
+			for(Map.Entry<String, byte[]> ent : map.entrySet()){
+				if(!ent.getKey().equals("sign"))
+					len += ent.getValue().length;
+			}
+
+			byte[] res = new byte[len];
+			
+			int prev = 0;
+			for(Map.Entry<String, byte[]> ent : map.entrySet()){
+				if(!ent.getKey().equals("sign")){
+					System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
+					prev += ent.getValue().length;
+				}
+			}
+			newHash = new BigInteger(1, SHA256.hash(res));
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -136,7 +164,9 @@ public class Msg implements Serializable {
 		}
 		byte[] sign_byte = map.get("sign");
 		if(sign_byte != null){
-			BigInteger prevHash = new BigInteger(sign_byte);
+			RSAPublicKey pk = (RSAPublicKey)(Helper.arrayToPublicKey(key));
+			algorithms.RSA rsa = new RSA(pk.getModulus());
+			BigInteger prevHash = rsa.decrypt(new BigInteger(1,sign_byte), pk.getPublicExponent());
 			if(!newHash.equals(prevHash)){
 				throw new NotValidMsgException();
 			}

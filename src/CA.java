@@ -15,7 +15,6 @@ import common.Helper;
 import common.Msg;
 import common.NotValidMsgException;
 
-
 public class CA extends Thread{
 	private ServerSocket serverSocket;
 	 
