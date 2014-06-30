@@ -1,17 +1,12 @@
-
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
@@ -204,12 +199,12 @@ public class Client {
 		msg.put("public", client.publicKey);
 		msg.put("name", client.name.getBytes());
 		
-		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 		msg.sign(null) ;
 		msg.encrypt(client.caPublicKey);
 		//-------------------------
 		Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
-		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+		ans.setEncryptionMethod(Msg.Encryption_NONE) ;
 		ans.decrypt(client.privateKey) ;
 		ans.validate(client.caPublicKey) ; 
 //		-------------------------

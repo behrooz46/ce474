@@ -74,9 +74,9 @@ public class CA extends Thread{
 				Object input = in.readObject() ;
 				//-------------------------
 				Msg ans = (Msg) input ;
-				ans.setEncryptionMethod(Msg.Encryption_RSA) ;
+				ans.setEncryptionMethod(Msg.Encryption_NONE) ;
 				ans.decrypt(privateKey) ;
-//				ans.validate(null) ;
+				ans.validate(null) ;
 				//-------------------------		
 				byte[] pu = ans.get("public") ;
 				byte[] name = ans.get("name") ;
@@ -84,7 +84,7 @@ public class CA extends Thread{
 				//-------------------------
 				Msg msg = new Msg() ;
 				msg.put("cert", cert);
-				msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+				msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 				msg.sign(this.privateKey) ;
 				msg.encrypt(pu);
 				//-------------------------
