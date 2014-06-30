@@ -78,7 +78,7 @@ public class CA extends Thread{
 				Msg ans = (Msg) input ;
 				ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 				ans.decrypt(privateKey) ;
-				ans.validate(null) ;
+//				ans.validate(null) ;
 				//-------------------------		
 				byte[] pu = ans.get("public") ;
 				byte[] name = ans.get("name") ;

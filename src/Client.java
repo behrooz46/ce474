@@ -6,9 +6,11 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
@@ -33,6 +35,8 @@ public class Client {
 	private byte[] index;
 	public String name;
 	
+	private byte[] caPrivateKey;
+	
 
 	public Client(String conf, String name) throws IOException, NoSuchAlgorithmException {
 		this.name = name;
@@ -50,6 +54,7 @@ public class Client {
         keyGen.initialize(1024);
         this.publicKey  =  keyGen.genKeyPair().getPublic().getEncoded();
         this.privateKey = keyGen.genKeyPair().getPrivate().getEncoded();
+        
 	}
 
 	public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
@@ -206,8 +211,8 @@ public class Client {
 		Msg ans = client.communicate(client.caServerName, client.caServerPort, msg) ;
 		ans.setEncryptionMethod(Msg.Encryption_RSA) ;
 		ans.decrypt(client.privateKey) ;
-//		ans.validate(client.caPublicKey) ; 
-		//-------------------------
+		ans.validate(client.caPublicKey) ; 
+//		-------------------------
 		client.setCertificate(ans.get("cert")); 
 	}
 

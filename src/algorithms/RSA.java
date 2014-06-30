@@ -9,6 +9,8 @@ import java.security.Security;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+
+import common.Helper;
     
 
 public class RSA {
@@ -32,20 +34,26 @@ public class RSA {
 
    public static void main(String[] args) {
 	  try{
-		  Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-		  KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
-		  keyPairGenerator.initialize(1024, new SecureRandom());
-		  
-		  KeyPair keyPair = keyPairGenerator.generateKeyPair();
-		  RSAPublicKey puk = (RSAPublicKey)keyPair.getPublic();
-		  RSAPrivateKey prk= (RSAPrivateKey)keyPair.getPrivate();
+//		  Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+//		  KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
+//		  keyPairGenerator.initialize(1024, new SecureRandom());
+//		  
+//		  KeyPair keyPair = keyPairGenerator.generateKeyPair();
+		  RSAPublicKey puk = (RSAPublicKey)(Helper.loadPublicKey("Keys/CA/public_key.der"));
+		  RSAPrivateKey prk= (RSAPrivateKey)(Helper.loadPrivateKey("Keys/CA/private_key.der"));
 		  
 		  int N = 1024;
 	      RSA key = new RSA(puk.getModulus());
 	//      System.out.println(key);
 	 
 	      // create random message, encrypt and decrypt
-	      BigInteger message = new BigInteger(N-1, random);
+//	      BigInteger message = new BigInteger(N-1, random);
+	      byte[] test = new byte[50];
+	      for(int i = 0 ; i < test.length ; i++){
+	    	  test[i] = (byte)i;
+	      }
+	      BigInteger message = new BigInteger(test);
+//	      System.out.println(message.toByteArray().length);
 	
 	      //// create message by converting string to integer
 	      // String s = "test";
@@ -53,6 +61,7 @@ public class RSA {
 	      // BigInteger message = new BigInteger(s);
 	      
 	      BigInteger encrypt = key.encrypt(message, puk.getPublicExponent());
+//	      System.out.println(encrypt.toByteArray().length);
 	      BigInteger decrypt = key.decrypt(encrypt, prk.getPrivateExponent());
 	      System.out.println("message   = " + message);
 	      System.out.println("encrpyted = " + encrypt);
@@ -67,5 +76,6 @@ public class RSA {
 		for (byte b : data) {
 			   System.out.format("%x ", b);
 		}
+		System.out.println();
 	}
 }

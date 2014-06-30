@@ -9,9 +9,13 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
+import java.util.Random;
+
+import sun.security.provider.SecureRandom;
 
 import ca.SignServer;
 import algorithms.*;
@@ -54,11 +58,84 @@ public class Msg implements Serializable {
 		try{
 			switch (encryptionMethod) {
 			case Encryption_RSA:
-				RSAPublicKey pk = (RSAPublicKey)Helper.arrayToPublicKey(key);
+				RSAPublicKey pk = (RSAPublicKey)(Helper.arrayToPublicKey(key));
+				  
 				algorithms.RSA rsa = new RSA(pk.getModulus());
-//				BigInteger msg = new BigInteger(Helper.serialize(map));
-//				body = rsa.encrypt(msg, pk.getPublicExponent()).toByteArray();
-				body = Helper.serialize(map);
+				
+				byte[] ser_map = Helper.serialize(map);
+//				RSA.print(ser_map);
+				
+				int maxByte = (pk.getModulus().bitLength() - 1) / 8;
+				
+				int sec = maxByte + 3;
+				
+				
+				byte[] len_bytes = ByteBuffer.allocate(4).putInt(ser_map.length).array();
+				byte[] len_block = new byte[maxByte];
+				System.arraycopy(len_bytes, 0, len_block, maxByte-len_bytes.length, len_bytes.length);
+				for(int i = 0 ; i < len_block.length - len_bytes.length ; i++){
+					len_block[i] = 0x00;
+				}
+				
+				byte[] final_map = new byte[ser_map.length + len_block.length];
+				System.arraycopy(len_block, 0, final_map, 0, len_block.length);
+				System.arraycopy(ser_map, 0, final_map, len_block.length, ser_map.length);
+				
+				
+				byte[] res = new byte[(final_map.length / maxByte) * (sec) + 
+				                      (final_map.length % maxByte == 0 ? 0 : sec)];
+				
+				for(int i = 0 ; i < final_map.length/maxByte ; i++){
+					byte[] block = new byte[maxByte];
+					System.arraycopy(final_map, i * maxByte, block, 0, maxByte);
+					BigInteger msg = new BigInteger(1, block);
+					BigInteger bodyInteger = rsa.encrypt(msg, pk.getPublicExponent());
+					byte[] resBlock = bodyInteger.toByteArray();
+					byte[] finalBlock = new byte[sec];
+//					System.out.println("result " + resBlock.length);
+					if(resBlock.length > maxByte + 1){
+						finalBlock[0] = 0x01;
+					}
+					else{
+						finalBlock[0] = 0x00;
+						finalBlock[1] = 0x00;
+					}
+					System.arraycopy(resBlock, 0, finalBlock, finalBlock.length - resBlock.length, resBlock.length);
+					System.arraycopy(finalBlock, 0, res, i * (sec), sec);
+				}
+				
+				int rem = final_map.length % maxByte;
+				if(rem > 0){
+					byte[] block = new byte[maxByte];
+					System.arraycopy(final_map, final_map.length - rem, block, 0, rem);
+					for(int i = 0 ; i < maxByte - rem ; i++){
+						block[rem + i] = 0x00;
+					}
+					BigInteger msg = new BigInteger(1, block);
+					BigInteger bodyInteger = rsa.encrypt(msg, pk.getPublicExponent());
+					byte[] resBlock = bodyInteger.toByteArray();
+					
+//					System.out.println("result " + resBlock.length);
+					byte[] finalBlock = new byte[sec];
+					
+					System.arraycopy(resBlock, 0, finalBlock, finalBlock.length - resBlock.length, resBlock.length);
+					if(resBlock.length > maxByte + 1){
+						finalBlock[0] = 0x01;
+					}
+					else{
+						finalBlock[0] = 0x00;
+						finalBlock[1] = 0x00;
+					}
+					System.arraycopy(finalBlock, 0, res, res.length - sec, sec);
+				}
+				
+				//decrypt
+				
+				body = res;
+				
+//				System.out.println(final_map.length % maxByte);
+//				System.out.println(ser_map.length);
+				
 				break;
 			case Encryption_AES:
 				break;
@@ -71,6 +148,7 @@ public class Msg implements Serializable {
 		}
 		catch(Exception e){
 			System.err.println("Error while retrieving key in encryption");
+			e.printStackTrace();
 		}
 	}
 
@@ -80,12 +158,54 @@ public class Msg implements Serializable {
 		try{
 			switch(encryptionMethod){
 			case Encryption_RSA:
+				
 				RSAPrivateKey pk = (RSAPrivateKey)Helper.arrayToPrivateKey(key);
 				algorithms.RSA rsa = new RSA(pk.getModulus());
-				BigInteger msg = new BigInteger(body);
-				body = rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray();
-				map = (HashMap<String, byte[]>)(Helper.deserialize(body));
-				sign = rsa.decrypt(new BigInteger(sign), pk.getPrivateExponent()).toByteArray();
+				
+				int maxByte = (pk.getModulus().bitLength() - 1) / 8;
+				int sec = maxByte + 3;
+				
+//				RSA.print(body);
+				byte[] res = new byte[(body.length / (sec)) * (maxByte)];
+				for(int i = 0 ; i < body.length/(sec) ; i++){
+					byte[] block;
+					int off = 1;
+					if(body[i * sec] == 1){
+						block = new byte[sec - 1];
+					}
+					else{
+						block = new byte[sec - 2];
+						off = 2;
+					}
+					System.arraycopy(body, i * (sec) + off, block, 0, sec - off);
+					BigInteger msg = new BigInteger(block);
+					BigInteger bodyInteger = rsa.decrypt(msg, pk.getPrivateExponent());
+					byte[] resBlock = bodyInteger.toByteArray();
+					byte[] finalBlock = new byte[maxByte];
+					if(resBlock.length <= maxByte){
+						System.arraycopy(resBlock, 0, finalBlock, maxByte - resBlock.length, resBlock.length);
+						for(int j = 0 ; j < maxByte - resBlock.length ; j++){
+							finalBlock[j] = 0x00;
+						}
+					}
+					else{
+						System.arraycopy(resBlock, resBlock.length - maxByte, finalBlock, 0, maxByte);
+					}
+					System.arraycopy(finalBlock, 0 , res, i * (maxByte), maxByte);
+				}
+				
+				
+				byte[] res_len = new byte[4];
+				System.arraycopy(res, maxByte - 4, res_len, 0, 4);
+				ByteBuffer wrapped = ByteBuffer.wrap(res_len); // big-endian by default
+				int len = wrapped.getInt();
+//				System.out.println(len % maxByte);
+//				System.out.println(len);
+				byte[] final_res = new byte[len];
+				System.arraycopy(res, maxByte, final_res, 0, len);
+//				RSA.print(final_res);
+				map = (HashMap<String, byte[]>)(Helper.deserialize(final_res));
+//				sign = rsa.decrypt(new BigInteger(sign), pk.getPrivateExponent()).toByteArray();
 				break;
 			case Encryption_AES:
 				break;
