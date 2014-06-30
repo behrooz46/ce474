@@ -181,7 +181,7 @@ public class Client {
 		Msg msg = new Msg() ;
 		msg.status = 800 ;
 		msg.put("cert", client.cert);
-		msg.setEncryptionMethod(Msg.Encryption_RSA) ;
+		msg.setEncryptionMethod(Msg.Encryption_NONE) ;
 		msg.sign(null) ;
 		msg.encrypt(client.authPublicKey);
 		//-------------------------

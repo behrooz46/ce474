@@ -52,10 +52,13 @@ public class Msg implements Serializable {
 			
 			int prev = 0;
 			for(Map.Entry<String, byte[]> ent : map.entrySet()){
+				System.out.println(ent.getKey());
 				System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 				prev += ent.getValue().length;
 			}
 			
+			System.out.println("res in sign:");
+			RSA.print(res);
 			
 			BigInteger msg = new BigInteger(1, SHA256.hash(res));
 			map.put("sign", rsa.encrypt(msg, pk.getPrivateExponent()).toByteArray());
@@ -151,10 +154,13 @@ public class Msg implements Serializable {
 			int prev = 0;
 			for(Map.Entry<String, byte[]> ent : map.entrySet()){
 				if(!ent.getKey().equals("sign")){
+					System.out.println(ent.getKey());
 					System.arraycopy(ent.getValue(), 0, res, prev, ent.getValue().length);
 					prev += ent.getValue().length;
 				}
 			}
+			System.out.println("res in validate:");
+			RSA.print(res);
 			newHash = new BigInteger(1, SHA256.hash(res));
 
 		} catch (Exception e) {

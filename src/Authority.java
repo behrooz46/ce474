@@ -88,10 +88,11 @@ public class Authority extends Thread {
 				Object input = in.readObject() ;
 				//-------------------------
 				Msg ans = (Msg) input ;
-				ans.setEncryptionMethod(Msg.Encryption_NONE) ;
-				ans.decrypt(privateKey) ;
+				
 				//-------------------------
 				if (ans.status == 700){
+					ans.setEncryptionMethod(Msg.Encryption_NONE) ;
+					ans.decrypt(privateKey) ;
 					ans.validate(collectPublicKey) ;
 					
 					Msg msg = new Msg() ;
@@ -105,6 +106,8 @@ public class Authority extends Thread {
 					ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
 					out.writeObject(msg);
 				}else{
+					ans.setEncryptionMethod(Msg.Encryption_NONE) ;
+					ans.decrypt(privateKey) ;
 					ans.validate(null) ;
 					
 					byte[] cert = ans.get("cert") ;
@@ -221,7 +224,7 @@ public class Authority extends Thread {
 
 		SecureRandom sr = new SecureRandom();
 
-		byte[] session = new byte[32];
+		byte[] session = new byte[16];
 //		byte[] iv = new byte[16];
 		sr.nextBytes(session);
 //		sr.nextBytes(iv);
